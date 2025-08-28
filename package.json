@@ -1,0 +1,45 @@
+{
+  "name": "ss-mudyf-accounting",
+  "version": "1.0.0",
+  "description": "Accounting Desktop Application for SS Mudyf Garment Manufacturing",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish=never"
+  },
+  "keywords": ["accounting", "electron", "desktop", "manufacturing"],
+  "author": "SS Mudyf Group",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.ssmudyf.accounting",
+    "productName": "SS Mudyf Accounting",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "renderer.js",
+      "styles.css",
+      "index.html",
+      "reports.html",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png"
+    }
+  }
+}
