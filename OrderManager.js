@@ -1,11 +1,11 @@
 // ==============================================
-// src/components/OrderManager.js - FULLY FUNCTIONAL
+// src/components/OrderManager.js - FIXED WITH DATA CONTEXT INTEGRATION
 // ==============================================
 import React, { useState, useEffect } from 'react';
+import { useData } from '../contexts/DataContext';
 
 const OrderManager = () => {
-  const [orders, setOrders] = useState([]);
-  const [customers, setCustomers] = useState([]);
+  const { orders, customers, actions } = useData();
   const [showAddOrder, setShowAddOrder] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
   const [sortBy, setSortBy] = useState('delivery_date');
@@ -24,72 +24,10 @@ const OrderManager = () => {
     price: '',
     colour: '',
     productionLine: '',
-    status: 'pending'
+    status: 'pending',
+    totalUnits: '',
+    priority: 'Medium'
   });
-
-  // Initialize data
-  useEffect(() => {
-    const mockOrders = [
-      {
-        id: 1,
-        order_number: 'ORD-2025-001',
-        style_number: 'STY-001',
-        cutsheet_number: 'CS-001',
-        account: 'Fashion Plus',
-        brand: 'Premium',
-        customer_id: 1,
-        customer_name: 'Fashion Plus Ltd',
-        delivery_date: '2025-09-15',
-        price: 1250.00,
-        colour: 'Navy Blue',
-        production_line: 'Line A',
-        status: 'in_production',
-        created_at: '2025-08-20'
-      },
-      {
-        id: 2,
-        order_number: 'ORD-2025-002',
-        style_number: 'STY-002',
-        cutsheet_number: 'CS-002',
-        account: 'Style Central',
-        brand: 'Classic',
-        customer_id: 2,
-        customer_name: 'Style Central Inc',
-        delivery_date: '2025-09-20',
-        price: 980.00,
-        colour: 'White',
-        production_line: 'Line B',
-        status: 'pending',
-        created_at: '2025-08-22'
-      },
-      {
-        id: 3,
-        order_number: 'ORD-2025-003',
-        style_number: 'STY-003',
-        cutsheet_number: 'CS-003',
-        account: 'Trend Makers',
-        brand: 'Casual',
-        customer_id: 3,
-        customer_name: 'Trend Makers',
-        delivery_date: '2025-09-10',
-        price: 1500.00,
-        colour: 'Black',
-        production_line: 'Line C',
-        status: 'completed',
-        created_at: '2025-08-18'
-      }
-    ];
-
-    const mockCustomers = [
-      { id: 1, name: 'Fashion Plus Ltd' },
-      { id: 2, name: 'Style Central Inc' },
-      { id: 3, name: 'Trend Makers' },
-      { id: 4, name: 'Elite Fashion' }
-    ];
-
-    setOrders(mockOrders);
-    setCustomers(mockCustomers);
-  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -111,7 +49,9 @@ const OrderManager = () => {
       price: '',
       colour: '',
       productionLine: '',
-      status: 'pending'
+      status: 'pending',
+      totalUnits: '',
+      priority: 'Medium'
     });
   };
 
@@ -120,49 +60,28 @@ const OrderManager = () => {
     
     const customerName = customers.find(c => c.id == orderForm.customerId)?.name || '';
     
+    const orderData = {
+      order_number: orderForm.orderNumber,
+      style_number: orderForm.styleNumber,
+      cutsheet_number: orderForm.cutsheetNumber,
+      account: orderForm.account,
+      brand: orderForm.brand,
+      customer_id: parseInt(orderForm.customerId),
+      customer_name: customerName,
+      delivery_date: orderForm.deliveryDate,
+      price: parseFloat(orderForm.price) || 0,
+      colour: orderForm.colour,
+      production_line: orderForm.productionLine,
+      status: orderForm.status,
+      total_units: parseInt(orderForm.totalUnits) || 0,
+      priority: orderForm.priority
+    };
+    
     if (editingOrder) {
-      // Update existing order
-      const updatedOrders = orders.map(order => 
-        order.id === editingOrder.id 
-          ? { 
-              ...order, 
-              order_number: orderForm.orderNumber,
-              style_number: orderForm.styleNumber,
-              cutsheet_number: orderForm.cutsheetNumber,
-              account: orderForm.account,
-              brand: orderForm.brand,
-              customer_id: parseInt(orderForm.customerId),
-              customer_name: customerName,
-              delivery_date: orderForm.deliveryDate,
-              price: parseFloat(orderForm.price),
-              colour: orderForm.colour,
-              production_line: orderForm.productionLine,
-              status: orderForm.status,
-              updated_at: new Date().toISOString()
-            }
-          : order
-      );
-      setOrders(updatedOrders);
+      actions.updateOrder(editingOrder.id, orderData);
       setEditingOrder(null);
     } else {
-      // Add new order
-      const newOrder = {
-        id: Date.now(),
-        order_number: orderForm.orderNumber,
-        style_number: orderForm.styleNumber,
-        cutsheet_number: orderForm.cutsheetNumber,
-        account: orderForm.account,
-        brand: orderForm.brand,
-        customer_id: parseInt(orderForm.customerId),
-        customer_name: customerName,
-        delivery_date: orderForm.deliveryDate,
-        price: parseFloat(orderForm.price),
-        colour: orderForm.colour,
-        production_line: orderForm.productionLine,
-        status: orderForm.status,
-        created_at: new Date().toISOString()
-      };
-      setOrders(prev => [...prev, newOrder]);
+      actions.addOrder(orderData);
     }
     
     resetForm();
@@ -172,24 +91,26 @@ const OrderManager = () => {
   const handleEdit = (order) => {
     setEditingOrder(order);
     setOrderForm({
-      orderNumber: order.order_number,
-      styleNumber: order.style_number,
-      cutsheetNumber: order.cutsheet_number,
-      account: order.account,
-      brand: order.brand,
-      customerId: order.customer_id.toString(),
-      deliveryDate: order.delivery_date,
-      price: order.price.toString(),
-      colour: order.colour,
-      productionLine: order.production_line,
-      status: order.status
+      orderNumber: order.order_number || '',
+      styleNumber: order.style_number || '',
+      cutsheetNumber: order.cutsheet_number || '',
+      account: order.account || '',
+      brand: order.brand || '',
+      customerId: order.customer_id?.toString() || '',
+      deliveryDate: order.delivery_date || '',
+      price: order.price?.toString() || '',
+      colour: order.colour || '',
+      productionLine: order.production_line || '',
+      status: order.status || 'pending',
+      totalUnits: order.total_units?.toString() || '',
+      priority: order.priority || 'Medium'
     });
     setShowAddOrder(true);
   };
 
   const handleDelete = (orderId) => {
     if (window.confirm('Are you sure you want to delete this order?')) {
-      setOrders(prev => prev.filter(order => order.id !== orderId));
+      actions.deleteOrder(orderId);
     }
   };
 
@@ -205,12 +126,12 @@ const OrderManager = () => {
   const filteredAndSortedOrders = orders
     .filter(order => {
       const matchesSearch = 
-        order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.style_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.account.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.colour.toLowerCase().includes(searchTerm.toLowerCase());
+        (order.order_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.style_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.account || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.brand || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.colour || '').toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesFilter = filterBy === 'all' || order.status === filterBy;
       return matchesSearch && matchesFilter;
@@ -220,20 +141,20 @@ const OrderManager = () => {
       
       switch (sortBy) {
         case 'delivery_date':
-          valueA = new Date(a.delivery_date);
-          valueB = new Date(b.delivery_date);
+          valueA = new Date(a.delivery_date || '1970-01-01');
+          valueB = new Date(b.delivery_date || '1970-01-01');
           break;
         case 'price':
-          valueA = a.price;
-          valueB = b.price;
+          valueA = a.price || 0;
+          valueB = b.price || 0;
           break;
         case 'created_at':
-          valueA = new Date(a.created_at);
-          valueB = new Date(b.created_at);
+          valueA = new Date(a.created_at || '1970-01-01');
+          valueB = new Date(b.created_at || '1970-01-01');
           break;
         default:
-          valueA = a[sortBy] || '';
-          valueB = b[sortBy] || '';
+          valueA = (a[sortBy] || '').toString().toLowerCase();
+          valueB = (b[sortBy] || '').toString().toLowerCase();
       }
 
       if (sortDirection === 'asc') {
@@ -253,9 +174,26 @@ const OrderManager = () => {
     }
   };
 
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'Critical': return 'bg-red-100 text-red-800';
+      case 'High': return 'bg-orange-100 text-orange-800';
+      case 'Medium': return 'bg-yellow-100 text-yellow-800';
+      case 'Low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   const getSortIcon = (field) => {
     if (sortBy !== field) return '↕️';
     return sortDirection === 'asc' ? '↑' : '↓';
+  };
+
+  const formatCurrency = (amount) => {
+    return `E ${(amount || 0).toLocaleString('en-SZ', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
   };
 
   return (
@@ -407,7 +345,7 @@ const OrderManager = () => {
                   Price {getSortIcon('price')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Colour/Line
+                  Details
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -421,34 +359,40 @@ const OrderManager = () => {
               {filteredAndSortedOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                    {order.order_number}
+                    {order.order_number || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                    {order.style_number}
+                    {order.style_number || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {order.cutsheet_number}
+                    {order.cutsheet_number || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {order.customer_name}
+                    {order.customer_name || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div>{order.account}</div>
-                    <div className="text-xs text-gray-400">{order.brand}</div>
+                    <div>{order.account || 'N/A'}</div>
+                    <div className="text-xs text-gray-400">{order.brand || ''}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(order.delivery_date).toLocaleDateString()}
+                    {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                    ${order.price?.toFixed(2)}
+                    {formatCurrency(order.price)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div>{order.colour}</div>
-                    <div className="text-xs text-gray-400">{order.production_line}</div>
+                    <div className="space-y-1">
+                      <div>Color: {order.colour || 'N/A'}</div>
+                      <div>Line: {order.production_line || 'N/A'}</div>
+                      <div>Units: {(order.total_units || 0).toLocaleString()}</div>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(order.priority)}`}>
+                        {order.priority || 'Medium'}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
-                      {order.status.replace('_', ' ').toUpperCase()}
+                      {(order.status || 'pending').replace('_', ' ').toUpperCase()}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
@@ -469,6 +413,11 @@ const OrderManager = () => {
               ))}
             </tbody>
           </table>
+          {filteredAndSortedOrders.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <p>No orders found. Create your first order!</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -598,13 +547,25 @@ const OrderManager = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (Emalangeni)</label>
                     <input
                       type="number"
                       name="price"
-                      placeholder="1250.00"
+                      placeholder="25000.00"
                       step="0.01"
                       value={orderForm.price}
+                      onChange={handleInputChange}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Total Units</label>
+                    <input
+                      type="number"
+                      name="totalUnits"
+                      placeholder="500"
+                      min="1"
+                      value={orderForm.totalUnits}
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -633,6 +594,20 @@ const OrderManager = () => {
                       <option value="Line B">Line B</option>
                       <option value="Line C">Line C</option>
                       <option value="Line D">Line D</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <select
+                      name="priority"
+                      value={orderForm.priority}
+                      onChange={handleInputChange}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                      <option value="Critical">Critical</option>
                     </select>
                   </div>
                   <div>

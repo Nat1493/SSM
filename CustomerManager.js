@@ -1,10 +1,11 @@
 // ==============================================
-// src/components/CustomerManager.js - FULLY FUNCTIONAL
+// src/components/CustomerManager.js - FIXED WITH DATA CONTEXT INTEGRATION
 // ==============================================
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useData } from '../contexts/DataContext';
 
 const CustomerManager = () => {
-  const [customers, setCustomers] = useState([]);
+  const { customers, actions, settings } = useData();
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,73 +22,6 @@ const CustomerManager = () => {
     category: 'Regular',
     notes: ''
   });
-
-  // Initialize data
-  useEffect(() => {
-    const mockCustomers = [
-      {
-        id: 1,
-        name: 'Fashion Plus Ltd',
-        contact_person: 'Sarah Johnson',
-        email: 'sarah@fashionplus.com',
-        phone: '+268 78901234',
-        address: 'Mbabane Industrial Area, Eswatini',
-        country: 'Eswatini',
-        category: 'Premium',
-        notes: 'Long-term client, prefers premium quality fabrics',
-        created_at: '2025-01-15T10:30:00.000Z',
-        total_orders: 15,
-        total_value: 18750.00,
-        last_order: '2025-08-20'
-      },
-      {
-        id: 2,
-        name: 'Style Central Inc',
-        contact_person: 'Michael Brown',
-        email: 'michael@stylecentral.com',
-        phone: '+268 76543210',
-        address: 'Manzini Commercial District, Eswatini',
-        country: 'Eswatini',
-        category: 'Regular',
-        notes: 'Volume orders, price-sensitive',
-        created_at: '2025-02-20T14:15:00.000Z',
-        total_orders: 8,
-        total_value: 9800.00,
-        last_order: '2025-08-22'
-      },
-      {
-        id: 3,
-        name: 'Trend Makers',
-        contact_person: 'Lisa Davis',
-        email: 'lisa@trendmakers.com',
-        phone: '+268 75432109',
-        address: 'Matsapha Export Processing Zone, Eswatini',
-        country: 'Eswatini',
-        category: 'Premium',
-        notes: 'Fashion-forward designs, quick turnaround required',
-        created_at: '2025-03-10T09:00:00.000Z',
-        total_orders: 12,
-        total_value: 15600.00,
-        last_order: '2025-08-18'
-      },
-      {
-        id: 4,
-        name: 'Elite Fashion',
-        contact_person: 'James Wilson',
-        email: 'james@elitefashion.com',
-        phone: '+268 74321098',
-        address: 'Big Bend Industrial Park, Eswatini',
-        country: 'Eswatini',
-        category: 'VIP',
-        notes: 'Highest quality requirements, luxury segment',
-        created_at: '2025-01-08T16:45:00.000Z',
-        total_orders: 22,
-        total_value: 35400.00,
-        last_order: '2025-08-25'
-      }
-    ];
-    setCustomers(mockCustomers);
-  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -113,44 +47,22 @@ const CustomerManager = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    const customerData = {
+      name: customerForm.name,
+      contact_person: customerForm.contactPerson,
+      email: customerForm.email,
+      phone: customerForm.phone,
+      address: customerForm.address,
+      country: customerForm.country,
+      category: customerForm.category,
+      notes: customerForm.notes
+    };
+    
     if (editingCustomer) {
-      // Update existing customer
-      const updatedCustomers = customers.map(customer => 
-        customer.id === editingCustomer.id 
-          ? { 
-              ...customer, 
-              name: customerForm.name,
-              contact_person: customerForm.contactPerson,
-              email: customerForm.email,
-              phone: customerForm.phone,
-              address: customerForm.address,
-              country: customerForm.country,
-              category: customerForm.category,
-              notes: customerForm.notes,
-              updated_at: new Date().toISOString()
-            }
-          : customer
-      );
-      setCustomers(updatedCustomers);
+      actions.updateCustomer(editingCustomer.id, customerData);
       setEditingCustomer(null);
     } else {
-      // Add new customer
-      const newCustomer = {
-        id: Date.now(),
-        name: customerForm.name,
-        contact_person: customerForm.contactPerson,
-        email: customerForm.email,
-        phone: customerForm.phone,
-        address: customerForm.address,
-        country: customerForm.country,
-        category: customerForm.category,
-        notes: customerForm.notes,
-        created_at: new Date().toISOString(),
-        total_orders: 0,
-        total_value: 0.00,
-        last_order: null
-      };
-      setCustomers(prev => [...prev, newCustomer]);
+      actions.addCustomer(customerData);
     }
     
     resetForm();
@@ -160,11 +72,11 @@ const CustomerManager = () => {
   const handleEdit = (customer) => {
     setEditingCustomer(customer);
     setCustomerForm({
-      name: customer.name,
-      contactPerson: customer.contact_person,
-      email: customer.email,
-      phone: customer.phone,
-      address: customer.address,
+      name: customer.name || '',
+      contactPerson: customer.contact_person || '',
+      email: customer.email || '',
+      phone: customer.phone || '',
+      address: customer.address || '',
       country: customer.country || 'Eswatini',
       category: customer.category || 'Regular',
       notes: customer.notes || ''
@@ -174,7 +86,7 @@ const CustomerManager = () => {
 
   const handleDelete = (customerId) => {
     if (window.confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
-      setCustomers(prev => prev.filter(customer => customer.id !== customerId));
+      actions.deleteCustomer(customerId);
     }
   };
 
@@ -191,11 +103,11 @@ const CustomerManager = () => {
     .filter(customer => {
       const searchLower = searchTerm.toLowerCase();
       return (
-        customer.name.toLowerCase().includes(searchLower) ||
-        customer.contact_person.toLowerCase().includes(searchLower) ||
-        customer.email.toLowerCase().includes(searchLower) ||
-        customer.phone.includes(searchTerm) ||
-        customer.category.toLowerCase().includes(searchLower)
+        (customer.name || '').toLowerCase().includes(searchLower) ||
+        (customer.contact_person || '').toLowerCase().includes(searchLower) ||
+        (customer.email || '').toLowerCase().includes(searchLower) ||
+        (customer.phone || '').includes(searchTerm) ||
+        (customer.category || '').toLowerCase().includes(searchLower)
       );
     })
     .sort((a, b) => {
@@ -238,9 +150,18 @@ const CustomerManager = () => {
     return sortDirection === 'asc' ? '↑' : '↓';
   };
 
+  const formatCurrency = (amount) => {
+    const currencySymbol = settings.currencySymbol || 'E';
+    return `${currencySymbol} ${(amount || 0).toLocaleString('en-SZ', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
+  };
+
   const totalCustomers = customers.length;
   const totalValue = customers.reduce((sum, customer) => sum + (customer.total_value || 0), 0);
   const avgOrderValue = totalCustomers > 0 ? totalValue / totalCustomers : 0;
+  const premiumCustomers = customers.filter(c => c.category === 'VIP' || c.category === 'Premium').length;
 
   return (
     <div className="space-y-6">
@@ -271,19 +192,19 @@ const CustomerManager = () => {
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="text-2xl font-bold text-green-600">
-            ${totalValue.toFixed(0)}
+            {formatCurrency(totalValue)}
           </div>
           <div className="text-gray-600">Total Value</div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="text-2xl font-bold text-purple-600">
-            ${avgOrderValue.toFixed(0)}
+            {formatCurrency(avgOrderValue)}
           </div>
           <div className="text-gray-600">Avg per Customer</div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="text-2xl font-bold text-orange-600">
-            {customers.filter(c => c.category === 'VIP' || c.category === 'Premium').length}
+            {premiumCustomers}
           </div>
           <div className="text-gray-600">Premium Clients</div>
         </div>
@@ -386,27 +307,27 @@ const CustomerManager = () => {
               {filteredAndSortedCustomers.map((customer) => (
                 <tr key={customer.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                    <div className="text-sm font-medium text-gray-900">{customer.name || 'N/A'}</div>
                     <div className="text-xs text-gray-500">
-                      Since {new Date(customer.created_at).toLocaleDateString()}
+                      Since {customer.created_at ? new Date(customer.created_at).toLocaleDateString() : 'N/A'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {customer.contact_person}
+                    {customer.contact_person || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div>{customer.email}</div>
-                    <div className="text-blue-600">{customer.phone}</div>
+                    <div>{customer.email || 'N/A'}</div>
+                    <div className="text-blue-600">{customer.phone || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
                     <div className="truncate" title={customer.address}>
-                      {customer.address}
+                      {customer.address || 'N/A'}
                     </div>
-                    <div className="text-xs text-gray-400">{customer.country}</div>
+                    <div className="text-xs text-gray-400">{customer.country || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(customer.category)}`}>
-                      {customer.category}
+                      {customer.category || 'Regular'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -416,7 +337,7 @@ const CustomerManager = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                    ${(customer.total_value || 0).toFixed(2)}
+                    {formatCurrency(customer.total_value || 0)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                     <button
@@ -436,6 +357,11 @@ const CustomerManager = () => {
               ))}
             </tbody>
           </table>
+          {filteredAndSortedCustomers.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <p>No customers found. Add your first customer!</p>
+            </div>
+          )}
         </div>
       </div>
 

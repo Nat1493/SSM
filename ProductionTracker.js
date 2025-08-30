@@ -1,14 +1,20 @@
 // ==============================================
-// src/components/ProductionTracker.js - ENHANCED WITH CUSTOM SIZES & PRODUCTION LINE MANAGEMENT
+// src/components/ProductionTracker.js - FIXED WITH DATA CONTEXT INTEGRATION
 // ==============================================
 import React, { useState, useEffect } from 'react';
+import { useData } from '../contexts/DataContext';
 
 const ProductionTracker = () => {
-  const [orders, setOrders] = useState([]);
+  const { 
+    orders, 
+    productionStages, 
+    dailyScores, 
+    productionLines, 
+    actions, 
+    settings 
+  } = useData();
+  
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [productionStages, setProductionStages] = useState([]);
-  const [dailyScores, setDailyScores] = useState([]);
-  const [productionLines, setProductionLines] = useState([]);
   const [showAddStage, setShowAddStage] = useState(false);
   const [showDailyScore, setShowDailyScore] = useState(false);
   const [showScoreHistory, setShowScoreHistory] = useState(false);
@@ -51,173 +57,6 @@ const ProductionTracker = () => {
   const [filterLine, setFilterLine] = useState('all');
   const [filterStage, setFilterStage] = useState('all');
   const [dateRange, setDateRange] = useState('week');
-
-  // Initialize data
-  useEffect(() => {
-    const mockProductionLines = [
-      {
-        id: 'line-a',
-        name: 'Line A',
-        location: 'Factory Floor East',
-        capacity: 300,
-        operatorCount: 6,
-        specialization: 'Shirts & Blouses',
-        status: 'active',
-        notes: 'High-quality garment production line',
-        efficiency: 95.2,
-        currentOrder: 'ORD-2025-001'
-      },
-      {
-        id: 'line-b',
-        name: 'Line B',
-        location: 'Factory Floor East',
-        capacity: 250,
-        operatorCount: 5,
-        specialization: 'Trousers & Pants',
-        status: 'active',
-        notes: 'Specialized in bottom wear production',
-        efficiency: 89.8,
-        currentOrder: 'ORD-2025-002'
-      },
-      {
-        id: 'line-c',
-        name: 'Line C',
-        location: 'Factory Floor West',
-        capacity: 400,
-        operatorCount: 8,
-        specialization: 'Dresses & Skirts',
-        status: 'maintenance',
-        notes: 'Under maintenance - resuming Monday',
-        efficiency: 78.9,
-        currentOrder: 'ORD-2025-003'
-      },
-      {
-        id: 'line-d',
-        name: 'Line D',
-        location: 'Factory Floor West',
-        capacity: 200,
-        operatorCount: 4,
-        specialization: 'Jackets & Outerwear',
-        status: 'active',
-        notes: 'Heavy-duty garment production',
-        efficiency: 95.1,
-        currentOrder: 'ORD-2025-004'
-      }
-    ];
-
-    const mockOrders = [
-      {
-        id: 1,
-        order_number: 'ORD-2025-001',
-        style_number: 'STY-001',
-        customer_name: 'Fashion Plus Ltd',
-        delivery_date: '2025-09-15',
-        status: 'in_production',
-        production_line: 'Line A',
-        total_units: 500,
-        priority: 'High',
-        customSizes: ['XS', 'S', 'M', 'L', 'XL', 'Custom-38', 'Custom-42']
-      },
-      {
-        id: 2,
-        order_number: 'ORD-2025-002',
-        style_number: 'STY-002',
-        customer_name: 'Style Central Inc',
-        delivery_date: '2025-09-20',
-        status: 'pending',
-        production_line: 'Line B',
-        total_units: 300,
-        priority: 'Medium',
-        customSizes: ['S', 'M', 'L', 'Custom-36', 'Custom-40']
-      },
-      {
-        id: 3,
-        order_number: 'ORD-2025-003',
-        style_number: 'STY-003',
-        customer_name: 'Trend Makers',
-        delivery_date: '2025-09-10',
-        status: 'in_production',
-        production_line: 'Line C',
-        total_units: 750,
-        priority: 'Critical',
-        customSizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Custom-34', 'Custom-44']
-      }
-    ];
-
-    const mockProductionStages = [
-      {
-        id: 1,
-        order_id: 1,
-        stage: 'cutting',
-        size: 'M',
-        units_completed: 150,
-        date_completed: '2025-08-28',
-        production_line: 'Line A',
-        operator: 'John Doe',
-        notes: 'Pattern cutting completed successfully',
-        quality_check: 'pass',
-        efficiency: 95.2
-      },
-      {
-        id: 2,
-        order_id: 1,
-        stage: 'cutting',
-        size: 'Custom-38',
-        units_completed: 45,
-        date_completed: '2025-08-28',
-        production_line: 'Line A',
-        operator: 'John Doe',
-        notes: 'Custom size pattern adjusted for client specifications',
-        quality_check: 'pass',
-        efficiency: 88.5
-      },
-      {
-        id: 3,
-        order_id: 1,
-        stage: 'sewing',
-        size: 'M',
-        units_completed: 140,
-        date_completed: '2025-08-29',
-        production_line: 'Line A',
-        operator: 'Jane Smith',
-        notes: 'Seaming completed, good quality',
-        quality_check: 'pass',
-        efficiency: 93.3
-      }
-    ];
-
-    const mockDailyScores = [
-      {
-        id: 1,
-        production_line: 'Line A',
-        date: '2025-08-29',
-        target_units: 300,
-        actual_units: 285,
-        operator_count: 6,
-        hours_worked: 8,
-        defective_units: 5,
-        efficiency_percentage: 95.0,
-        notes: 'Good performance, minor quality issues'
-      },
-      {
-        id: 2,
-        production_line: 'Line B',
-        date: '2025-08-29',
-        target_units: 250,
-        actual_units: 268,
-        operator_count: 5,
-        hours_worked: 8,
-        defective_units: 3,
-        efficiency_percentage: 107.2,
-        notes: 'Exceeded target, excellent team performance'
-      }
-    ];
-
-    setProductionLines(mockProductionLines);
-    setOrders(mockOrders);
-    setProductionStages(mockProductionStages);
-    setDailyScores(mockDailyScores);
-  }, []);
 
   const handleStageInputChange = (e) => {
     const { name, value } = e.target;
@@ -282,21 +121,19 @@ const ProductionTracker = () => {
       return;
     }
 
-    const newStage = {
-      id: Date.now(),
+    const stageData = {
       order_id: selectedOrder.id,
       stage: stageForm.stage,
       size: finalSize,
-      units_completed: parseInt(stageForm.unitsCompleted),
+      units_completed: parseInt(stageForm.unitsCompleted) || 0,
       date_completed: stageForm.dateCompleted,
       production_line: stageForm.productionLine,
       operator: stageForm.operator,
       notes: stageForm.notes,
-      quality_check: stageForm.qualityCheck,
-      efficiency: Math.round((Math.random() * 20 + 80) * 10) / 10
+      quality_check: stageForm.qualityCheck
     };
 
-    setProductionStages(prev => [...prev, newStage]);
+    actions.addProductionStage(stageData);
     resetStageForms();
     setShowAddStage(false);
   };
@@ -304,28 +141,18 @@ const ProductionTracker = () => {
   const handleDailyScoreSubmit = (e) => {
     e.preventDefault();
     
-    const targetUnits = parseInt(dailyScoreForm.targetUnits) || 0;
-    const actualUnits = parseInt(dailyScoreForm.actualUnits) || 0;
-    const efficiency = targetUnits > 0 ? ((actualUnits / targetUnits) * 100) : 0;
-
-    const newScore = {
-      id: Date.now(),
+    const scoreData = {
       production_line: dailyScoreForm.productionLine,
       date: dailyScoreForm.date,
-      target_units: targetUnits,
-      actual_units: actualUnits,
+      target_units: parseInt(dailyScoreForm.targetUnits) || 0,
+      actual_units: parseInt(dailyScoreForm.actualUnits) || 0,
       operator_count: parseInt(dailyScoreForm.operatorCount) || 0,
       hours_worked: parseFloat(dailyScoreForm.hoursWorked) || 8,
       defective_units: parseInt(dailyScoreForm.defectiveUnits) || 0,
-      efficiency_percentage: Math.round(efficiency * 10) / 10,
       notes: dailyScoreForm.notes
     };
 
-    const filteredScores = dailyScores.filter(score => 
-      !(score.production_line === newScore.production_line && score.date === newScore.date)
-    );
-
-    setDailyScores([...filteredScores, newScore]);
+    actions.addDailyScore(scoreData);
     resetStageForms();
     setShowDailyScore(false);
   };
@@ -333,41 +160,21 @@ const ProductionTracker = () => {
   const handleLineSubmit = (e) => {
     e.preventDefault();
     
+    const lineData = {
+      name: lineForm.name,
+      location: lineForm.location,
+      capacity: parseInt(lineForm.capacity) || 0,
+      operatorCount: parseInt(lineForm.operatorCount) || 0,
+      specialization: lineForm.specialization,
+      status: lineForm.status,
+      notes: lineForm.notes
+    };
+    
     if (editingLine) {
-      // Update existing line
-      const updatedLines = productionLines.map(line => 
-        line.id === editingLine.id 
-          ? { 
-              ...line, 
-              name: lineForm.name,
-              location: lineForm.location,
-              capacity: parseInt(lineForm.capacity) || 0,
-              operatorCount: parseInt(lineForm.operatorCount) || 0,
-              specialization: lineForm.specialization,
-              status: lineForm.status,
-              notes: lineForm.notes,
-              updated_at: new Date().toISOString()
-            }
-          : line
-      );
-      setProductionLines(updatedLines);
+      actions.updateProductionLine(editingLine.id, lineData);
       setEditingLine(null);
     } else {
-      // Add new line
-      const newLine = {
-        id: `line-${Date.now()}`,
-        name: lineForm.name,
-        location: lineForm.location,
-        capacity: parseInt(lineForm.capacity) || 0,
-        operatorCount: parseInt(lineForm.operatorCount) || 0,
-        specialization: lineForm.specialization,
-        status: lineForm.status,
-        notes: lineForm.notes,
-        efficiency: 0,
-        currentOrder: null,
-        created_at: new Date().toISOString()
-      };
-      setProductionLines(prev => [...prev, newLine]);
+      actions.addProductionLine(lineData);
     }
     
     resetLineForm();
@@ -377,12 +184,12 @@ const ProductionTracker = () => {
   const handleEditLine = (line) => {
     setEditingLine(line);
     setLineForm({
-      name: line.name,
-      location: line.location,
-      capacity: line.capacity.toString(),
-      operatorCount: line.operatorCount.toString(),
-      specialization: line.specialization,
-      status: line.status,
+      name: line.name || '',
+      location: line.location || '',
+      capacity: (line.capacity || 0).toString(),
+      operatorCount: (line.operatorCount || 0).toString(),
+      specialization: line.specialization || '',
+      status: line.status || 'active',
       notes: line.notes || ''
     });
     setShowLineManager(true);
@@ -390,7 +197,7 @@ const ProductionTracker = () => {
 
   const handleDeleteLine = (lineId) => {
     if (window.confirm('Are you sure you want to delete this production line? This action cannot be undone.')) {
-      setProductionLines(prev => prev.filter(line => line.id !== lineId));
+      actions.deleteProductionLine(lineId);
     }
   };
 
@@ -404,7 +211,7 @@ const ProductionTracker = () => {
         const matchesLine = filterLine === 'all' || stage.production_line === filterLine;
         return matchesOrder && matchesStage && matchesLine;
       })
-      .sort((a, b) => new Date(b.date_completed) - new Date(a.date_completed));
+      .sort((a, b) => new Date(b.date_completed || '1970-01-01') - new Date(a.date_completed || '1970-01-01'));
   };
 
   const getRecentDailyScores = () => {
@@ -421,8 +228,8 @@ const ProductionTracker = () => {
     const cutoffDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000));
     
     return dailyScores
-      .filter(score => new Date(score.date) >= cutoffDate)
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
+      .filter(score => new Date(score.date || '1970-01-01') >= cutoffDate)
+      .sort((a, b) => new Date(b.date || '1970-01-01') - new Date(a.date || '1970-01-01'));
   };
 
   const getStageIcon = (stage) => {
@@ -484,16 +291,25 @@ const ProductionTracker = () => {
 
   const calculateOrderProgress = (order) => {
     const orderStages = productionStages.filter(stage => stage.order_id === order.id);
-    if (orderStages.length === 0) return { completed: 0, total: order.total_units, percentage: 0 };
+    if (orderStages.length === 0) return { completed: 0, total: order.total_units || 0, percentage: 0 };
     
-    const totalCompleted = orderStages.reduce((sum, stage) => sum + stage.units_completed, 0);
-    const percentage = Math.min((totalCompleted / order.total_units) * 100, 100);
+    const totalCompleted = orderStages.reduce((sum, stage) => sum + (stage.units_completed || 0), 0);
+    const totalUnits = order.total_units || 1; // Prevent division by zero
+    const percentage = Math.min((totalCompleted / totalUnits) * 100, 100);
     
     return {
       completed: totalCompleted,
-      total: order.total_units,
+      total: totalUnits,
       percentage: Math.round(percentage * 10) / 10
     };
+  };
+
+  const formatCurrency = (amount) => {
+    const currencySymbol = settings.currencySymbol || 'E';
+    return `${currencySymbol} ${(amount || 0).toLocaleString('en-SZ', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
   };
 
   const stages = ['cutting', 'sewing', 'packing', 'quality_check', 'finishing'];
@@ -504,7 +320,7 @@ const ProductionTracker = () => {
     if (!selectedOrder) return predefinedSizes;
     
     const allSizes = [...predefinedSizes];
-    if (selectedOrder.customSizes) {
+    if (selectedOrder.customSizes && Array.isArray(selectedOrder.customSizes)) {
       selectedOrder.customSizes.forEach(size => {
         if (!allSizes.includes(size)) {
           allSizes.push(size);
@@ -525,7 +341,11 @@ const ProductionTracker = () => {
         </div>
         <div className="flex space-x-3">
           <button
-            onClick={() => setShowLineManager(true)}
+            onClick={() => {
+              resetLineForm();
+              setEditingLine(null);
+              setShowLineManager(true);
+            }}
             className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors font-medium"
           >
             🏭 Manage Lines
@@ -567,14 +387,14 @@ const ProductionTracker = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-3">
                     <div>
-                      <h4 className="font-semibold text-gray-900">{line.name}</h4>
-                      <p className="text-sm text-gray-500">{line.location}</p>
-                      <p className="text-xs text-gray-400">{line.specialization}</p>
+                      <h4 className="font-semibold text-gray-900">{line.name || 'N/A'}</h4>
+                      <p className="text-sm text-gray-500">{line.location || 'N/A'}</p>
+                      <p className="text-xs text-gray-400">{line.specialization || 'N/A'}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getLineStatusColor(line.status)}`}>
-                      {line.status.toUpperCase()}
+                      {(line.status || 'active').toUpperCase()}
                     </span>
                   </div>
                 </div>
@@ -582,11 +402,11 @@ const ProductionTracker = () => {
                 <div className="space-y-2 text-sm text-gray-600">
                   <div className="flex justify-between">
                     <span>Capacity:</span>
-                    <span className="font-medium">{line.capacity} units/day</span>
+                    <span className="font-medium">{(line.capacity || 0).toLocaleString()} units/day</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Operators:</span>
-                    <span className="font-medium">{line.operatorCount}</span>
+                    <span className="font-medium">{line.operatorCount || 0}</span>
                   </div>
                   {line.efficiency && (
                     <div className="flex justify-between">
@@ -620,11 +440,15 @@ const ProductionTracker = () => {
                 </div>
               </div>
             ))}
+            {productionLines.length === 0 && (
+              <div className="col-span-full text-center py-8 text-gray-500">
+                <p>No production lines configured. Add your first production line!</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Rest of the existing component code for order tracking and production stages... */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Order Selection */}
         <div className="bg-white rounded-lg shadow-sm border">
@@ -645,16 +469,16 @@ const ProductionTracker = () => {
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <div className="font-medium text-gray-900">{order.order_number}</div>
+                    <div className="font-medium text-gray-900">{order.order_number || 'N/A'}</div>
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(order.priority)}`}>
-                      {order.priority}
+                      {order.priority || 'Medium'}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-600 mb-1">{order.style_number}</div>
-                  <div className="text-xs text-gray-500 mb-2">{order.customer_name}</div>
+                  <div className="text-sm text-gray-600 mb-1">{order.style_number || 'N/A'}</div>
+                  <div className="text-xs text-gray-500 mb-2">{order.customer_name || 'N/A'}</div>
                   <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                    <span>Due: {new Date(order.delivery_date).toLocaleDateString()}</span>
-                    <span>{order.production_line}</span>
+                    <span>Due: {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'N/A'}</span>
+                    <span>{order.production_line || 'N/A'}</span>
                   </div>
                   {order.customSizes && order.customSizes.length > 0 && (
                     <div className="text-xs text-blue-600 mb-2">
@@ -664,7 +488,7 @@ const ProductionTracker = () => {
                   <div className="mt-2">
                     <div className="flex justify-between text-xs text-gray-600 mb-1">
                       <span>Progress</span>
-                      <span>{progress.completed}/{progress.total} units ({progress.percentage}%)</span>
+                      <span>{progress.completed.toLocaleString()}/{progress.total.toLocaleString()} units ({progress.percentage}%)</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
@@ -676,6 +500,11 @@ const ProductionTracker = () => {
                 </button>
               );
             })}
+            {orders.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <p>No orders available. Create orders first to track production.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -719,23 +548,23 @@ const ProductionTracker = () => {
                       <tr key={stage.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border ${getStageColor(stage.stage)}`}>
-                            {getStageIcon(stage.stage)} {stage.stage.charAt(0).toUpperCase() + stage.stage.slice(1)}
+                            {getStageIcon(stage.stage)} {(stage.stage || 'unknown').charAt(0).toUpperCase() + (stage.stage || 'unknown').slice(1)}
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`text-sm font-medium ${stage.size.startsWith('Custom') ? 'text-blue-600 bg-blue-50 px-2 py-1 rounded' : 'text-gray-900'}`}>
-                            {stage.size}
+                          <span className={`text-sm font-medium ${(stage.size || '').startsWith('Custom') ? 'text-blue-600 bg-blue-50 px-2 py-1 rounded' : 'text-gray-900'}`}>
+                            {stage.size || 'N/A'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 font-medium">{stage.units_completed}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 font-medium">{(stage.units_completed || 0).toLocaleString()}</td>
                         <td className="px-4 py-3 text-sm text-gray-500">
-                          {new Date(stage.date_completed).toLocaleDateString()}
+                          {stage.date_completed ? new Date(stage.date_completed).toLocaleDateString() : 'N/A'}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{stage.production_line}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{stage.operator}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{stage.production_line || 'N/A'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{stage.operator || 'N/A'}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getQualityColor(stage.quality_check)}`}>
-                            {stage.quality_check.toUpperCase()}
+                            {(stage.quality_check || 'pass').toUpperCase()}
                           </span>
                         </td>
                       </tr>
@@ -765,137 +594,6 @@ const ProductionTracker = () => {
           )}
         </div>
       </div>
-
-      {/* Production Line Management Modal */}
-      {showLineManager && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white max-h-screen overflow-y-auto">
-            <div className="flex items-center justify-between mb-6 pb-3 border-b">
-              <h3 className="text-xl font-semibold text-gray-900">
-                {editingLine ? 'Edit Production Line' : 'Add New Production Line'}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowLineManager(false);
-                  setEditingLine(null);
-                  resetLineForm();
-                }}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            
-            <form onSubmit={handleLineSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Line Name *</label>
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Line E"
-                    value={lineForm.name}
-                    onChange={handleLineInputChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                  <input
-                    type="text"
-                    name="location"
-                    placeholder="Factory Floor North"
-                    value={lineForm.location}
-                    onChange={handleLineInputChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Daily Capacity (units)</label>
-                  <input
-                    type="number"
-                    name="capacity"
-                    placeholder="300"
-                    min="1"
-                    value={lineForm.capacity}
-                    onChange={handleLineInputChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Number of Operators</label>
-                  <input
-                    type="number"
-                    name="operatorCount"
-                    placeholder="6"
-                    min="1"
-                    value={lineForm.operatorCount}
-                    onChange={handleLineInputChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
-                  <input
-                    type="text"
-                    name="specialization"
-                    placeholder="Shirts & Blouses"
-                    value={lineForm.specialization}
-                    onChange={handleLineInputChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select
-                    name="status"
-                    value={lineForm.status}
-                    onChange={handleLineInputChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="active">Active</option>
-                    <option value="maintenance">Maintenance</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea
-                  name="notes"
-                  placeholder="Additional notes about this production line..."
-                  value={lineForm.notes}
-                  onChange={handleLineInputChange}
-                  rows="3"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div className="flex justify-end space-x-3 pt-6 border-t">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowLineManager(false);
-                    setEditingLine(null);
-                    resetLineForm();
-                  }}
-                  className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
-                >
-                  {editingLine ? 'Update Line' : 'Add Line'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Add Production Stage Modal with Custom Size Support */}
       {showAddStage && selectedOrder && (
@@ -1071,6 +769,350 @@ const ProductionTracker = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Production Line Management Modal */}
+      {showLineManager && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white max-h-screen overflow-y-auto">
+            <div className="flex items-center justify-between mb-6 pb-3 border-b">
+              <h3 className="text-xl font-semibold text-gray-900">
+                {editingLine ? 'Edit Production Line' : 'Add New Production Line'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowLineManager(false);
+                  setEditingLine(null);
+                  resetLineForm();
+                }}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <form onSubmit={handleLineSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Line Name *</label>
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Line E"
+                    value={lineForm.name}
+                    onChange={handleLineInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                  <input
+                    type="text"
+                    name="location"
+                    placeholder="Factory Floor North"
+                    value={lineForm.location}
+                    onChange={handleLineInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Daily Capacity (units)</label>
+                  <input
+                    type="number"
+                    name="capacity"
+                    placeholder="300"
+                    min="1"
+                    value={lineForm.capacity}
+                    onChange={handleLineInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Number of Operators</label>
+                  <input
+                    type="number"
+                    name="operatorCount"
+                    placeholder="6"
+                    min="1"
+                    value={lineForm.operatorCount}
+                    onChange={handleLineInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
+                  <input
+                    type="text"
+                    name="specialization"
+                    placeholder="Shirts & Blouses"
+                    value={lineForm.specialization}
+                    onChange={handleLineInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    name="status"
+                    value={lineForm.status}
+                    onChange={handleLineInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="active">Active</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea
+                  name="notes"
+                  placeholder="Additional notes about this production line..."
+                  value={lineForm.notes}
+                  onChange={handleLineInputChange}
+                  rows="3"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-6 border-t">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLineManager(false);
+                    setEditingLine(null);
+                    resetLineForm();
+                  }}
+                  className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
+                >
+                  {editingLine ? 'Update Line' : 'Add Line'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Daily Score Modal */}
+      {showDailyScore && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-5 border w-11/12 md:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-6 pb-3 border-b">
+              <h3 className="text-xl font-semibold text-gray-900">Add Daily Production Score</h3>
+              <button
+                onClick={() => {
+                  setShowDailyScore(false);
+                  resetStageForms();
+                }}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <form onSubmit={handleDailyScoreSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Production Line *</label>
+                  <select
+                    name="productionLine"
+                    value={dailyScoreForm.productionLine}
+                    onChange={handleScoreInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select Line</option>
+                    {productionLines.map(line => (
+                      <option key={line.id} value={line.name}>{line.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                  <input
+                    type="date"
+                    name="date"
+                    value={dailyScoreForm.date}
+                    onChange={handleScoreInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Target Units *</label>
+                  <input
+                    type="number"
+                    name="targetUnits"
+                    placeholder="300"
+                    min="1"
+                    value={dailyScoreForm.targetUnits}
+                    onChange={handleScoreInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Actual Units *</label>
+                  <input
+                    type="number"
+                    name="actualUnits"
+                    placeholder="285"
+                    min="0"
+                    value={dailyScoreForm.actualUnits}
+                    onChange={handleScoreInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Operator Count</label>
+                  <input
+                    type="number"
+                    name="operatorCount"
+                    placeholder="6"
+                    min="1"
+                    value={dailyScoreForm.operatorCount}
+                    onChange={handleScoreInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hours Worked</label>
+                  <input
+                    type="number"
+                    name="hoursWorked"
+                    placeholder="8"
+                    min="0"
+                    step="0.5"
+                    value={dailyScoreForm.hoursWorked}
+                    onChange={handleScoreInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Defective Units</label>
+                  <input
+                    type="number"
+                    name="defectiveUnits"
+                    placeholder="5"
+                    min="0"
+                    value={dailyScoreForm.defectiveUnits}
+                    onChange={handleScoreInputChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea
+                  name="notes"
+                  placeholder="Daily performance notes, issues encountered, etc."
+                  value={dailyScoreForm.notes}
+                  onChange={handleScoreInputChange}
+                  rows="3"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-6 border-t">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDailyScore(false);
+                    resetStageForms();
+                  }}
+                  className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
+                >
+                  Add Score
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Score History Modal */}
+      {showScoreHistory && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 shadow-lg rounded-md bg-white max-h-screen overflow-y-auto">
+            <div className="flex items-center justify-between mb-6 pb-3 border-b">
+              <h3 className="text-xl font-semibold text-gray-900">Daily Production Score History</h3>
+              <button
+                onClick={() => setShowScoreHistory(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Line</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Target</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actual</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Efficiency</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Operators</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Defects</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {getRecentDailyScores().map((score) => (
+                    <tr key={score.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {score.date ? new Date(score.date).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                        {score.production_line || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {(score.target_units || 0).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                        {(score.actual_units || 0).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span className={`font-medium ${getEfficiencyColor(score.efficiency_percentage || 0)}`}>
+                          {(score.efficiency_percentage || 0).toFixed(1)}%
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {score.operator_count || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {score.defective_units || 0}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {getRecentDailyScores().length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No daily scores recorded yet.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

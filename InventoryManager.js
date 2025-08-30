@@ -1,10 +1,11 @@
 // ==============================================
-// src/components/InventoryManager.js - FULLY FUNCTIONAL
+// src/components/InventoryManager.js - FIXED WITH DATA CONTEXT INTEGRATION
 // ==============================================
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useData } from '../contexts/DataContext';
 
 const InventoryManager = () => {
-  const [inventory, setInventory] = useState([]);
+  const { inventory, actions, settings } = useData();
   const [showAddItem, setShowAddItem] = useState(false);
   const [showReceiving, setShowReceiving] = useState(false);
   const [showUsage, setShowUsage] = useState(false);
@@ -44,108 +45,6 @@ const InventoryManager = () => {
     usedFor: '',
     notes: ''
   });
-
-  // Initialize data
-  useEffect(() => {
-    const mockInventory = [
-      {
-        id: 1,
-        type: 'fabric',
-        name: 'Cotton Denim',
-        supplier: 'Textile Suppliers Ltd',
-        quantity_received: 500,
-        quantity_used: 120,
-        quantity_available: 380,
-        unit: 'meters',
-        cost_per_unit: 12.50,
-        received_date: '2025-08-20',
-        low_stock_threshold: 50,
-        description: 'High-quality cotton denim, 14oz weight',
-        color: 'Indigo Blue',
-        category: 'Denim',
-        created_at: '2025-08-20',
-        last_updated: '2025-08-28',
-        total_value: 4750.00
-      },
-      {
-        id: 2,
-        type: 'trim',
-        name: 'Metal Buttons',
-        supplier: 'Button Co',
-        quantity_received: 1000,
-        quantity_used: 250,
-        quantity_available: 750,
-        unit: 'pieces',
-        cost_per_unit: 0.35,
-        received_date: '2025-08-22',
-        low_stock_threshold: 100,
-        description: 'Brass-plated metal buttons, 15mm diameter',
-        color: 'Brass',
-        category: 'Buttons',
-        created_at: '2025-08-22',
-        last_updated: '2025-08-26',
-        total_value: 262.50
-      },
-      {
-        id: 3,
-        type: 'material',
-        name: 'Polyester Thread',
-        supplier: 'Thread Masters',
-        quantity_received: 50,
-        quantity_used: 12,
-        quantity_available: 38,
-        unit: 'spools',
-        cost_per_unit: 4.20,
-        received_date: '2025-08-25',
-        low_stock_threshold: 10,
-        description: 'High-strength polyester thread, 40 weight',
-        color: 'Navy Blue',
-        category: 'Thread',
-        created_at: '2025-08-25',
-        last_updated: '2025-08-29',
-        total_value: 159.60
-      },
-      {
-        id: 4,
-        type: 'fabric',
-        name: 'Cotton Canvas',
-        supplier: 'Premium Fabrics',
-        quantity_received: 200,
-        quantity_used: 180,
-        quantity_available: 20,
-        unit: 'meters',
-        cost_per_unit: 18.75,
-        received_date: '2025-08-15',
-        low_stock_threshold: 30,
-        description: 'Heavy-duty cotton canvas, 16oz weight',
-        color: 'Natural',
-        category: 'Canvas',
-        created_at: '2025-08-15',
-        last_updated: '2025-08-28',
-        total_value: 375.00
-      },
-      {
-        id: 5,
-        type: 'trim',
-        name: 'YKK Zippers',
-        supplier: 'YKK Fasteners',
-        quantity_received: 200,
-        quantity_used: 85,
-        quantity_available: 115,
-        unit: 'pieces',
-        cost_per_unit: 2.50,
-        received_date: '2025-08-18',
-        low_stock_threshold: 20,
-        description: 'Heavy-duty metal zippers, 20cm length',
-        color: 'Silver',
-        category: 'Zippers',
-        created_at: '2025-08-18',
-        last_updated: '2025-08-27',
-        total_value: 287.50
-      }
-    ];
-    setInventory(mockInventory);
-  }, []);
 
   const handleInputChange = (e, formType = 'item') => {
     const { name, value } = e.target;
@@ -192,49 +91,35 @@ const InventoryManager = () => {
     
     if (editingItem) {
       // Update existing item
-      const updatedInventory = inventory.map(item => 
-        item.id === editingItem.id 
-          ? { 
-              ...item,
-              type: itemForm.type,
-              name: itemForm.name,
-              supplier: itemForm.supplier,
-              unit: itemForm.unit,
-              cost_per_unit: parseFloat(itemForm.costPerUnit) || 0,
-              low_stock_threshold: parseInt(itemForm.lowStockThreshold) || 0,
-              description: itemForm.description,
-              color: itemForm.color,
-              category: itemForm.category,
-              last_updated: new Date().toISOString().split('T')[0]
-            }
-          : item
-      );
-      setInventory(updatedInventory);
-      setEditingItem(null);
-    } else {
-      // Add new item
-      const quantityReceived = parseFloat(itemForm.quantityReceived) || 0;
-      const costPerUnit = parseFloat(itemForm.costPerUnit) || 0;
-      const newItem = {
-        id: Date.now(),
+      const updateData = {
         type: itemForm.type,
         name: itemForm.name,
         supplier: itemForm.supplier,
-        quantity_received: quantityReceived,
-        quantity_used: 0,
-        quantity_available: quantityReceived,
         unit: itemForm.unit,
-        cost_per_unit: costPerUnit,
+        cost_per_unit: parseFloat(itemForm.costPerUnit) || 0,
+        low_stock_threshold: parseInt(itemForm.lowStockThreshold) || 0,
+        description: itemForm.description,
+        color: itemForm.color,
+        category: itemForm.category
+      };
+      actions.updateInventoryItem(editingItem.id, updateData);
+      setEditingItem(null);
+    } else {
+      // Add new item
+      const itemData = {
+        type: itemForm.type,
+        name: itemForm.name,
+        supplier: itemForm.supplier,
+        quantity_received: parseFloat(itemForm.quantityReceived) || 0,
+        unit: itemForm.unit,
+        cost_per_unit: parseFloat(itemForm.costPerUnit) || 0,
         received_date: itemForm.receivedDate,
         low_stock_threshold: parseInt(itemForm.lowStockThreshold) || 0,
         description: itemForm.description,
         color: itemForm.color,
-        category: itemForm.category,
-        created_at: new Date().toISOString().split('T')[0],
-        last_updated: new Date().toISOString().split('T')[0],
-        total_value: quantityReceived * costPerUnit
+        category: itemForm.category
       };
-      setInventory(prev => [...prev, newItem]);
+      actions.addInventoryItem(itemData);
     }
     
     resetForms();
@@ -248,21 +133,15 @@ const InventoryManager = () => {
     const additionalQuantity = parseFloat(receivingForm.quantity) || 0;
     const newCostPerUnit = parseFloat(receivingForm.costPerUnit) || selectedItem.cost_per_unit;
 
-    const updatedInventory = inventory.map(item =>
-      item.id === selectedItem.id
-        ? {
-            ...item,
-            quantity_received: item.quantity_received + additionalQuantity,
-            quantity_available: item.quantity_available + additionalQuantity,
-            cost_per_unit: newCostPerUnit,
-            received_date: receivingForm.receivedDate || item.received_date,
-            last_updated: new Date().toISOString().split('T')[0],
-            total_value: (item.quantity_received + additionalQuantity) * newCostPerUnit
-          }
-        : item
-    );
+    const receivingData = {
+      quantity: additionalQuantity,
+      costPerUnit: newCostPerUnit,
+      receivedDate: receivingForm.receivedDate,
+      supplierBatch: receivingForm.supplierBatch,
+      notes: receivingForm.notes
+    };
 
-    setInventory(updatedInventory);
+    actions.receiveInventoryItem(selectedItem.id, additionalQuantity, receivingData);
     resetForms();
     setShowReceiving(false);
     setSelectedItem(null);
@@ -278,34 +157,33 @@ const InventoryManager = () => {
       return;
     }
 
-    const updatedInventory = inventory.map(item =>
-      item.id === selectedItem.id
-        ? {
-            ...item,
-            quantity_used: item.quantity_used + usedQuantity,
-            quantity_available: item.quantity_available - usedQuantity,
-            last_updated: new Date().toISOString().split('T')[0]
-          }
-        : item
-    );
+    const usageData = {
+      usedDate: usageForm.usedDate,
+      usedFor: usageForm.usedFor,
+      notes: usageForm.notes
+    };
 
-    setInventory(updatedInventory);
-    resetForms();
-    setShowUsage(false);
-    setSelectedItem(null);
+    try {
+      actions.useInventoryItem(selectedItem.id, usedQuantity, usageData);
+      resetForms();
+      setShowUsage(false);
+      setSelectedItem(null);
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   const handleEdit = (item) => {
     setEditingItem(item);
     setItemForm({
-      type: item.type,
-      name: item.name,
-      supplier: item.supplier,
+      type: item.type || 'fabric',
+      name: item.name || '',
+      supplier: item.supplier || '',
       quantityReceived: '',
-      unit: item.unit,
-      costPerUnit: item.cost_per_unit.toString(),
-      receivedDate: item.received_date,
-      lowStockThreshold: item.low_stock_threshold.toString(),
+      unit: item.unit || '',
+      costPerUnit: (item.cost_per_unit || 0).toString(),
+      receivedDate: item.received_date || '',
+      lowStockThreshold: (item.low_stock_threshold || 0).toString(),
       description: item.description || '',
       color: item.color || '',
       category: item.category || ''
@@ -315,7 +193,7 @@ const InventoryManager = () => {
 
   const handleDelete = (itemId) => {
     if (window.confirm('Are you sure you want to delete this inventory item?')) {
-      setInventory(prev => prev.filter(item => item.id !== itemId));
+      actions.deleteInventoryItem(itemId);
     }
   };
 
@@ -332,11 +210,11 @@ const InventoryManager = () => {
     .filter(item => {
       const matchesType = filterType === 'all' || item.type === filterType;
       const matchesSearch = 
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.supplier.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.supplier || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.category || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.color || '').toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesLowStock = !showLowStock || (item.quantity_available <= item.low_stock_threshold);
+      const matchesLowStock = !showLowStock || ((item.quantity_available || 0) <= (item.low_stock_threshold || 0));
       
       return matchesType && matchesSearch && matchesLowStock;
     })
@@ -381,8 +259,13 @@ const InventoryManager = () => {
   };
 
   const getStockLevel = (item) => {
-    const percentage = (item.quantity_available / item.quantity_received) * 100;
-    if (item.quantity_available <= item.low_stock_threshold) {
+    const quantityAvailable = item.quantity_available || 0;
+    const quantityReceived = item.quantity_received || 1; // Prevent division by zero
+    const lowStockThreshold = item.low_stock_threshold || 0;
+    
+    const percentage = (quantityAvailable / quantityReceived) * 100;
+    
+    if (quantityAvailable <= lowStockThreshold) {
       return { level: 'Critical', color: 'text-red-600', bgColor: 'bg-red-100' };
     } else if (percentage <= 30) {
       return { level: 'Low', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
@@ -398,10 +281,18 @@ const InventoryManager = () => {
     return sortDirection === 'asc' ? '↑' : '↓';
   };
 
+  const formatCurrency = (amount) => {
+    const currencySymbol = settings.currencySymbol || 'E';
+    return `${currencySymbol} ${(amount || 0).toLocaleString('en-SZ', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
+  };
+
   const totalItems = inventory.length;
   const totalValue = inventory.reduce((sum, item) => sum + (item.total_value || 0), 0);
-  const lowStockItems = inventory.filter(item => item.quantity_available <= item.low_stock_threshold).length;
-  const criticalItems = inventory.filter(item => item.quantity_available === 0).length;
+  const lowStockItems = inventory.filter(item => (item.quantity_available || 0) <= (item.low_stock_threshold || 0)).length;
+  const criticalItems = inventory.filter(item => (item.quantity_available || 0) === 0).length;
 
   return (
     <div className="space-y-6">
@@ -433,7 +324,7 @@ const InventoryManager = () => {
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="text-2xl font-bold text-green-600">
-            ${totalValue.toFixed(0)}
+            {formatCurrency(totalValue)}
           </div>
           <div className="text-gray-600">Total Value</div>
         </div>
@@ -573,30 +464,30 @@ const InventoryManager = () => {
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(item.type)}`}>
-                        {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                        {(item.type || 'unknown').charAt(0).toUpperCase() + (item.type || 'unknown').slice(1)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{item.name}</div>
-                      <div className="text-xs text-gray-500">{item.category}</div>
-                      <div className="text-xs text-gray-400">{item.color}</div>
+                      <div className="text-sm font-medium text-gray-900">{item.name || 'N/A'}</div>
+                      <div className="text-xs text-gray-500">{item.category || 'N/A'}</div>
+                      <div className="text-xs text-gray-400">{item.color || 'N/A'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div>{item.supplier}</div>
+                      <div>{item.supplier || 'N/A'}</div>
                       <div className="text-xs text-gray-400">
-                        Received: {new Date(item.received_date).toLocaleDateString()}
+                        Received: {item.received_date ? new Date(item.received_date).toLocaleDateString() : 'N/A'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="text-sm font-medium text-gray-900">
-                        {item.quantity_available} / {item.quantity_received} {item.unit}
+                        {(item.quantity_available || 0).toLocaleString()} / {(item.quantity_received || 0).toLocaleString()} {item.unit || 'units'}
                       </div>
                       <div className="text-xs text-gray-500">
-                        Used: {item.quantity_used} {item.unit}
+                        Used: {(item.quantity_used || 0).toLocaleString()} {item.unit || 'units'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                      ${item.cost_per_unit?.toFixed(2)} / {item.unit}
+                      {formatCurrency(item.cost_per_unit || 0)} / {item.unit || 'unit'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${stockLevel.bgColor} ${stockLevel.color}`}>
@@ -604,7 +495,7 @@ const InventoryManager = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                      ${item.total_value?.toFixed(2)}
+                      {formatCurrency(item.total_value || 0)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-1">
                       <button
@@ -622,7 +513,7 @@ const InventoryManager = () => {
                           setShowUsage(true);
                         }}
                         className="text-orange-600 hover:text-orange-900 bg-orange-50 px-2 py-1 rounded text-xs"
-                        disabled={item.quantity_available === 0}
+                        disabled={(item.quantity_available || 0) === 0}
                       >
                         Use
                       </button>
@@ -644,6 +535,11 @@ const InventoryManager = () => {
               })}
             </tbody>
           </table>
+          {filteredAndSortedInventory.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <p>No inventory items found. Add your first item!</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -764,11 +660,11 @@ const InventoryManager = () => {
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cost per Unit</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cost per Unit (Emalangeni)</label>
                   <input
                     type="number"
                     name="costPerUnit"
-                    placeholder="12.50"
+                    placeholder="231.25"
                     step="0.01"
                     value={itemForm.costPerUnit}
                     onChange={handleInputChange}
@@ -858,9 +754,9 @@ const InventoryManager = () => {
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium text-gray-900 mb-2">Current Stock Status</h4>
                 <p className="text-sm text-gray-600">
-                  Available: <span className="font-medium">{selectedItem.quantity_available} {selectedItem.unit}</span> | 
-                  Total Received: <span className="font-medium">{selectedItem.quantity_received} {selectedItem.unit}</span> | 
-                  Used: <span className="font-medium">{selectedItem.quantity_used} {selectedItem.unit}</span>
+                  Available: <span className="font-medium">{(selectedItem.quantity_available || 0).toLocaleString()} {selectedItem.unit}</span> | 
+                  Total Received: <span className="font-medium">{(selectedItem.quantity_received || 0).toLocaleString()} {selectedItem.unit}</span> | 
+                  Used: <span className="font-medium">{(selectedItem.quantity_used || 0).toLocaleString()} {selectedItem.unit}</span>
                 </p>
               </div>
               
@@ -880,11 +776,11 @@ const InventoryManager = () => {
                   <p className="text-xs text-gray-500 mt-1">Unit: {selectedItem.unit}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cost per Unit</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cost per Unit (Emalangeni)</label>
                   <input
                     type="number"
                     name="costPerUnit"
-                    placeholder={selectedItem.cost_per_unit}
+                    placeholder={(selectedItem.cost_per_unit || 0).toString()}
                     step="0.01"
                     value={receivingForm.costPerUnit}
                     onChange={(e) => handleInputChange(e, 'receiving')}
@@ -975,7 +871,7 @@ const InventoryManager = () => {
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium text-gray-900 mb-2">Available Stock</h4>
                 <p className="text-sm text-gray-600">
-                  <span className="font-medium text-lg">{selectedItem.quantity_available} {selectedItem.unit}</span> available for use
+                  <span className="font-medium text-lg">{(selectedItem.quantity_available || 0).toLocaleString()} {selectedItem.unit}</span> available for use
                 </p>
               </div>
               
@@ -993,7 +889,7 @@ const InventoryManager = () => {
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
-                  <p className="text-xs text-gray-500 mt-1">Max: {selectedItem.quantity_available} {selectedItem.unit}</p>
+                  <p className="text-xs text-gray-500 mt-1">Max: {(selectedItem.quantity_available || 0).toLocaleString()} {selectedItem.unit}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Usage Date *</label>
