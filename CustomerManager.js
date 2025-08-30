@@ -3,6 +3,7 @@
 // ==============================================
 import React, { useState } from 'react';
 import { useData } from '../contexts/DataContext';
+import { currencyUtils } from '../utils/currency';
 
 const CustomerManager = () => {
   const { customers, actions, settings } = useData();
@@ -150,12 +151,9 @@ const CustomerManager = () => {
     return sortDirection === 'asc' ? '↑' : '↓';
   };
 
+  // Then REPLACE the formatCurrency function with:
   const formatCurrency = (amount) => {
-    const currencySymbol = settings.currencySymbol || 'E';
-    return `${currencySymbol} ${(amount || 0).toLocaleString('en-SZ', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })}`;
+    return currencyUtils.format(amount);
   };
 
   const totalCustomers = customers.length;

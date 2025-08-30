@@ -3,6 +3,7 @@
 // ==============================================
 import React, { useState, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
+import { currencyUtils } from '../utils/currency';
 
 const ProductionTracker = () => {
   const { 
@@ -305,11 +306,7 @@ const ProductionTracker = () => {
   };
 
   const formatCurrency = (amount) => {
-    const currencySymbol = settings.currencySymbol || 'E';
-    return `${currencySymbol} ${(amount || 0).toLocaleString('en-SZ', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })}`;
+    return currencyUtils.format(amount);
   };
 
   const stages = ['cutting', 'sewing', 'packing', 'quality_check', 'finishing'];

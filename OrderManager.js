@@ -3,6 +3,7 @@
 // ==============================================
 import React, { useState, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
+import { currencyUtils } from '../utils/currency';
 
 const OrderManager = () => {
   const { orders, customers, actions } = useData();
@@ -190,10 +191,7 @@ const OrderManager = () => {
   };
 
   const formatCurrency = (amount) => {
-    return `E ${(amount || 0).toLocaleString('en-SZ', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })}`;
+    return currencyUtils.format(amount);
   };
 
   return (

@@ -3,6 +3,7 @@
 // ==============================================
 import React, { useState } from 'react';
 import { useData } from '../contexts/DataContext';
+import { currencyUtils } from '../utils/currency';
 
 const InventoryManager = () => {
   const { inventory, actions, settings } = useData();
@@ -282,12 +283,9 @@ const InventoryManager = () => {
   };
 
   const formatCurrency = (amount) => {
-    const currencySymbol = settings.currencySymbol || 'E';
-    return `${currencySymbol} ${(amount || 0).toLocaleString('en-SZ', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })}`;
+  return currencyUtils.format(amount);
   };
+
 
   const totalItems = inventory.length;
   const totalValue = inventory.reduce((sum, item) => sum + (item.total_value || 0), 0);
