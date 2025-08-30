@@ -1,45 +1,79 @@
 {
-  "name": "ss-mudyf-accounting",
+  "name": "ss-mudyf-order-tracker",
   "version": "1.0.0",
-  "description": "Accounting Desktop Application for SS Mudyf Garment Manufacturing",
-  "main": "main.js",
-  "scripts": {
-    "start": "electron .",
-    "build": "electron-builder",
-    "dist": "electron-builder --publish=never"
-  },
-  "keywords": ["accounting", "electron", "desktop", "manufacturing"],
-  "author": "SS Mudyf Group",
+  "description": "Order tracking and management system for SS Mudyf textile CMT factory in Eswatini",
+  "author": "SS Mudyf Team",
   "license": "MIT",
-  "devDependencies": {
-    "electron": "^25.0.0",
-    "electron-builder": "^24.0.0"
+  "main": "public/electron.js",
+  "homepage": "./",
+  "private": true,
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "electron": "electron .",
+    "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron-build": "npm run build && electron-builder",
+    "build-win": "npm run build && electron-builder --win",
+    "preelectron-build": "npm run build"
   },
   "build": {
-    "appId": "com.ssmudyf.accounting",
-    "productName": "SS Mudyf Accounting",
+    "appId": "com.ssmudyf.ordertracker",
+    "productName": "SS Mudyf Order Tracker",
     "directories": {
       "output": "dist"
     },
     "files": [
-      "main.js",
-      "renderer.js",
-      "styles.css",
-      "index.html",
-      "reports.html",
-      "node_modules/**/*"
+      "build/**/*",
+      "public/electron.js",
+      "node_modules/**/*",
+      "package.json"
     ],
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.ico"
+      "icon": "build/icon.ico"
     },
-    "mac": {
-      "target": "dmg",
-      "icon": "assets/icon.icns"
-    },
-    "linux": {
-      "target": "AppImage",
-      "icon": "assets/icon.png"
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     }
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.8.1",
+    "react-scripts": "5.0.1",
+    "date-fns": "^2.29.3",
+    "recharts": "^2.5.0",
+    "web-vitals": "^3.1.1"
+  },
+  "devDependencies": {
+    "electron": "^22.0.0",
+    "electron-builder": "^24.0.0",
+    "electron-is-dev": "^2.0.0",
+    "concurrently": "^7.6.0",
+    "wait-on": "^7.0.1",
+    "tailwindcss": "^3.2.4",
+    "postcss": "^8.4.21",
+    "autoprefixer": "^10.4.13"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

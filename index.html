@@ -1,243 +1,138 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SS Mudyf Accounting System</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div class="container">
-        <header class="header">
-            <h1>SS Mudyf Accounting System</h1>
-            <div class="factory-selector">
-                <select id="factorySelect">
-                    <option value="investments">SS Mudyf Investments (PTY) ltd - Matsapha</option>
-                    <option value="textiles">SS Mudyf Textiles (PTY) ltd - Matsanjeni</option>
-                </select>
-            </div>
-        </header>
-
-        <nav class="navigation">
-            <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
-            <button class="nav-btn" data-tab="expenses">Add Expense</button>
-            <button class="nav-btn" data-tab="reports">Reports</button>
-            <button class="nav-btn" data-tab="settings">Settings</button>
-        </nav>
-
-        <main class="main-content">
-            <!-- Dashboard Tab -->
-            <div id="dashboard" class="tab-content active">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>This Month's Expenses</h3>
-                        <div class="stat-value" id="monthlyTotal">E 0.00</div>
-                        <div class="stat-factory" id="monthlyFactory"></div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Total Expenses (Current Year)</h3>
-                        <div class="stat-value" id="yearlyTotal">E 0.00</div>
-                        <div class="stat-factory" id="yearlyFactory"></div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Number of Transactions</h3>
-                        <div class="stat-value" id="transactionCount">0</div>
-                        <div class="stat-factory" id="transactionFactory"></div>
-                    </div>
-                </div>
-
-                <div class="recent-expenses">
-                    <h3>Recent Expenses</h3>
-                    <div class="table-container">
-                        <table id="recentExpensesTable">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Description</th>
-                                    <th>Category</th>
-                                    <th>Amount (E)</th>
-                                    <th>Factory</th>
-                                    <th>Receipts</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Add Expense Tab -->
-            <div id="expenses" class="tab-content">
-                <div class="form-container">
-                    <h2>Add New Expense</h2>
-                    <form id="expenseForm">
-                        <div class="form-group">
-                            <label for="expenseDate">Date</label>
-                            <input type="date" id="expenseDate" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="expenseFactory">Factory</label>
-                            <select id="expenseFactory" required>
-                                <option value="investments">SS Mudyf Investments (PTY) ltd - Matsapha</option>
-                                <option value="textiles">SS Mudyf Textiles (PTY) ltd - Matsanjeni</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="expenseCategory">Category</label>
-                            <select id="expenseCategory" required>
-                                <option value="">Select Category</option>
-                                <option value="raw-materials">Raw Materials</option>
-                                <option value="labor">Labor Costs</option>
-                                <option value="utilities">Utilities</option>
-                                <option value="rent">Rent & Property</option>
-                                <option value="equipment">Equipment & Machinery</option>
-                                <option value="transportation">Transportation</option>
-                                <option value="maintenance">Maintenance & Repairs</option>
-                                <option value="insurance">Insurance</option>
-                                <option value="marketing">Marketing & Advertising</option>
-                                <option value="administrative">Administrative</option>
-                                <option value="taxes">Taxes & Fees</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="expenseDescription">Description</label>
-                            <textarea id="expenseDescription" rows="3" required placeholder="Detailed description of the expense"></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="expenseAmount">Amount (Emalangeni)</label>
-                            <input type="number" id="expenseAmount" step="0.01" min="0" required placeholder="0.00">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="expenseReference">Reference/Invoice Number</label>
-                            <input type="text" id="expenseReference" placeholder="Optional reference number">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="expenseVendor">Vendor/Supplier</label>
-                            <input type="text" id="expenseVendor" placeholder="Name of vendor or supplier">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="expenseReceipt">Receipt/Invoice Attachment</label>
-                            <div class="file-upload-container">
-                                <input type="file" id="expenseReceipt" accept="image/*,.pdf" multiple>
-                                <div class="file-upload-info">
-                                    <span class="upload-text">📎 Click to attach receipts</span>
-                                    <span class="upload-details">Supports: Images (JPG, PNG, GIF) and PDF files (Max: 5MB each)</span>
-                                </div>
-                            </div>
-                            <div id="receiptPreview" class="receipt-preview"></div>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary">💰 Add Expense</button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Reports Tab -->
-            <div id="reports" class="tab-content">
-                <div class="reports-container">
-                    <h2>Generate Reports</h2>
-                    
-                    <div class="report-options">
-                        <div class="report-filter">
-                            <div class="form-group">
-                                <label for="reportFactory">Factory</label>
-                                <select id="reportFactory">
-                                    <option value="both">Both Factories</option>
-                                    <option value="investments">SS Mudyf Investments (PTY) ltd</option>
-                                    <option value="textiles">SS Mudyf Textiles (PTY) ltd</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="reportMonth">Month</label>
-                                <select id="reportMonth">
-                                    <option value="">All Months</option>
-                                    <option value="01">January</option>
-                                    <option value="02">February</option>
-                                    <option value="03">March</option>
-                                    <option value="04">April</option>
-                                    <option value="05">May</option>
-                                    <option value="06">June</option>
-                                    <option value="07">July</option>
-                                    <option value="08">August</option>
-                                    <option value="09">September</option>
-                                    <option value="10">October</option>
-                                    <option value="11">November</option>
-                                    <option value="12">December</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="reportYear">Year</label>
-                                <select id="reportYear"></select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="reportType">Report Type</label>
-                                <select id="reportType">
-                                    <option value="standard">Standard Report</option>
-                                    <option value="bank">Bank Report</option>
-                                    <option value="revenue-office">Eswatini Revenue Office</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="report-actions">
-                            <button id="generateReport" class="btn btn-primary">Generate Report</button>
-                            <button id="printReport" class="btn btn-secondary">Print Report</button>
-                            <button id="exportData" class="btn btn-secondary">Export Data</button>
-                        </div>
-                    </div>
-
-                    <div id="reportOutput" class="report-output">
-                        <div class="report-placeholder">
-                            <p>Select your report parameters and click "Generate Report" to view results.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Settings Tab -->
-            <div id="settings" class="tab-content">
-                <div class="settings-container">
-                    <h2>Settings</h2>
-                    
-                    <div class="settings-section">
-                        <h3>Company Information</h3>
-                        <div class="form-group">
-                            <label for="companyName">Company Name</label>
-                            <input type="text" id="companyName" value="SS Mudyf Group">
-                        </div>
-                        <div class="form-group">
-                            <label for="companyAddress">Address</label>
-                            <textarea id="companyAddress" rows="3">Matsapha & Matsanjeni, Eswatini</textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="companyContact">Contact Information</label>
-                            <input type="text" id="companyContact" placeholder="Phone/Email">
-                        </div>
-                    </div>
-
-                    <div class="settings-section">
-                        <h3>Data Management</h3>
-                        <button id="backupData" class="btn btn-secondary">Backup Data</button>
-                        <button id="importData" class="btn btn-secondary">Import Data</button>
-                        <button id="clearAllData" class="btn btn-danger">Clear All Data</button>
-                    </div>
-                </div>
-            </div>
-        </main>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="SS Mudyf Order Tracking System - Textile CMT Factory Management" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Tailwind CSS CDN for development -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <title>SS Mudyf - Order Tracking System</title>
+    
+    <style>
+      /* Custom scrollbar for better UI */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: #a1a1a1;
+      }
+      
+      /* Loading animation */
+      .loading-spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 2s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      /* Print styles for reports */
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+        
+        body {
+          font-size: 12px;
+        }
+        
+        .print-break {
+          page-break-before: always;
+        }
+      }
+    </style>
+  </head>
+  
+  <body>
+    <noscript>You need to enable JavaScript to run this application.</noscript>
+    
+    <!-- Loading screen -->
+    <div id="loading-screen" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    ">
+      <div class="loading-spinner"></div>
+      <h2 style="margin-top: 20px; color: #333; font-family: Arial, sans-serif;">
+        Loading SS Mudyf Order Tracker...
+      </h2>
+      <p style="color: #666; font-family: Arial, sans-serif; margin-top: 10px;">
+        Textile CMT Factory Management System
+      </p>
     </div>
-
-    <script src="renderer.js"></script>
-</body>
+    
+    <!-- React App will mount here -->
+    <div id="root"></div>
+    
+    <script>
+      // Hide loading screen once React loads
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const loadingScreen = document.getElementById('loading-screen');
+          if (loadingScreen) {
+            loadingScreen.style.opacity = '0';
+            loadingScreen.style.transition = 'opacity 0.5s ease';
+            setTimeout(function() {
+              loadingScreen.remove();
+            }, 500);
+          }
+        }, 1000);
+      });
+    </script>
+    
+    <!-- Error boundary fallback -->
+    <script>
+      window.addEventListener('error', function(e) {
+        console.error('Application Error:', e.error);
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+          loadingScreen.innerHTML = `
+            <div style="text-align: center; color: #e74c3c;">
+              <h2>Application Error</h2>
+              <p>Please refresh the page or contact support.</p>
+              <button onclick="location.reload()" style="
+                background: #3498db;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                margin-top: 20px;
+              ">Refresh Page</button>
+            </div>
+          `;
+        }
+      });
+    </script>
+  </body>
 </html>
