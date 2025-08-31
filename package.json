@@ -21,7 +21,8 @@
     "build-all": "npm run build && electron-builder -mwl",
     "preelectron-build": "npm run build",
     "dist": "npm run build && electron-builder",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "web-build": "npm run build && serve -s build"
   },
   "build": {
     "appId": "com.ssmudyf.ordertracker",

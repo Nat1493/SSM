@@ -13,7 +13,7 @@ export const currencyUtils = {
     } = options;
 
     const numAmount = parseFloat(amount) || 0;
-    const formatted = numAmount.toLocaleString('en-ZA', {
+    const formatted = numAmount.toLocaleString('en-US', {
       minimumFractionDigits,
       maximumFractionDigits
     });

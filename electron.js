@@ -1,20 +1,42 @@
 // ==============================================
-// public/electron.js - Complete Electron Main Process
+// public/electron.js - Fixed Electron Main Process
 // ==============================================
 const { app, BrowserWindow, Menu, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
-const isDev = require('electron-is-dev');
-const { autoUpdater } = require('electron-updater');
+const fs = require('fs');
+
+// Try to import optional dependencies safely
+let isDev = false;
+let autoUpdater = null;
+
+try {
+  isDev = require('electron-is-dev');
+} catch (err) {
+  // Fallback to check NODE_ENV
+  isDev = process.env.NODE_ENV === 'development';
+}
+
+try {
+  if (!isDev) {
+    autoUpdater = require('electron-updater').autoUpdater;
+  }
+} catch (err) {
+  console.log('Auto-updater not available');
+}
 
 let mainWindow;
 let splashWindow;
 
 // Enable live reload for development
 if (isDev) {
-  require('electron-reload')(__dirname, {
-    electron: path.join(__dirname, '..', 'node_modules', '.bin', 'electron'),
-    hardResetMethod: 'exit'
-  });
+  try {
+    require('electron-reload')(__dirname, {
+      electron: path.join(__dirname, '..', 'node_modules', '.bin', 'electron'),
+      hardResetMethod: 'exit'
+    });
+  } catch (err) {
+    console.log('Electron-reload not available');
+  }
 }
 
 function createSplashWindow() {
@@ -24,13 +46,59 @@ function createSplashWindow() {
     frame: false,
     alwaysOnTop: true,
     transparent: true,
+    show: false,
     webPreferences: {
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      enableRemoteModule: false
     }
   });
 
-  splashWindow.loadFile(path.join(__dirname, 'splash.html'));
+  const splashPath = path.join(__dirname, 'splash.html');
+  
+  // Check if splash.html exists, if not create a simple one
+  if (fs.existsSync(splashPath)) {
+    splashWindow.loadFile(splashPath);
+  } else {
+    splashWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: white;
+            text-align: center;
+          }
+          .loading {
+            animation: pulse 2s infinite;
+          }
+          @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="loading">
+          <h1>🏭 SS Mudyf</h1>
+          <p>Loading Order Tracking System...</p>
+        </div>
+      </body>
+      </html>
+    `)}`);
+  }
+  
+  splashWindow.once('ready-to-show', () => {
+    splashWindow.show();
+  });
   
   splashWindow.on('closed', () => {
     splashWindow = null;
@@ -46,10 +114,11 @@ function createMainWindow() {
     minHeight: 800,
     show: false, // Don't show until ready
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      enableRemoteModule: true,
-      webSecurity: false // Allow local file access
+      nodeIntegration: false,
+      contextIsolation: true,
+      enableRemoteModule: false,
+      webSecurity: true,
+      preload: path.join(__dirname, 'preload.js') // We'll create this if needed
     },
     icon: getIconPath(),
     title: 'SS Mudyf Order Tracking System',
@@ -61,16 +130,25 @@ function createMainWindow() {
     ? 'http://localhost:3000' 
     : `file://${path.join(__dirname, '../build/index.html')}`;
   
-  mainWindow.loadURL(startUrl);
+  mainWindow.loadURL(startUrl).catch(err => {
+    console.error('Failed to load URL:', err);
+    // Fallback URL in case of loading issues
+    if (isDev) {
+      setTimeout(() => {
+        mainWindow.loadURL('http://localhost:3000');
+      }, 2000);
+    }
+  });
 
   // Show window when ready
   mainWindow.once('ready-to-show', () => {
-    if (splashWindow) {
+    if (splashWindow && !splashWindow.isDestroyed()) {
       splashWindow.close();
     }
     mainWindow.show();
+    mainWindow.focus();
     
-    // Focus on the main window
+    // Open DevTools in development
     if (isDev) {
       mainWindow.webContents.openDevTools();
     }
@@ -87,22 +165,68 @@ function createMainWindow() {
     return { action: 'deny' };
   });
 
+  // Prevent navigation to external URLs
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (url !== mainWindow.webContents.getURL()) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  });
+
   // Create application menu
   createMenu();
-}
 
-function getIconPath() {
-  if (process.platform === 'win32') {
-    return path.join(__dirname, 'assets', 'icon.ico');
-  } else if (process.platform === 'darwin') {
-    return path.join(__dirname, 'assets', 'icon.icns');
-  } else {
-    return path.join(__dirname, 'assets', 'icon.png');
+  // Handle certificate errors (for development)
+  if (isDev) {
+    mainWindow.webContents.on('certificate-error', (event, url, error, certificate, callback) => {
+      // In development, ignore certificate errors
+      event.preventDefault();
+      callback(true);
+    });
   }
 }
 
+function getIconPath() {
+  const iconPaths = {
+    win32: ['icon.ico', 'assets/icon.ico', 'build/icon.ico'],
+    darwin: ['icon.icns', 'assets/icon.icns', 'build/icon.icns'],
+    linux: ['icon.png', 'assets/icon.png', 'build/icon.png']
+  };
+
+  const possiblePaths = iconPaths[process.platform] || iconPaths.linux;
+  
+  for (const iconPath of possiblePaths) {
+    const fullPath = path.join(__dirname, iconPath);
+    if (fs.existsSync(fullPath)) {
+      return fullPath;
+    }
+  }
+  
+  // Return undefined if no icon found
+  return undefined;
+}
+
 function createMenu() {
+  const isMac = process.platform === 'darwin';
+  
   const template = [
+    // macOS app menu
+    ...(isMac ? [{
+      label: app.getName(),
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideothers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    }] : []),
+    
+    // File menu
     {
       label: 'File',
       submenu: [
@@ -110,9 +234,12 @@ function createMenu() {
           label: 'New Order',
           accelerator: 'CmdOrCtrl+N',
           click: () => {
-            mainWindow.webContents.send('menu-new-order');
+            if (mainWindow) {
+              mainWindow.webContents.send('menu-new-order');
+            }
           }
         },
+        { type: 'separator' },
         {
           label: 'Export Data',
           accelerator: 'CmdOrCtrl+E',
@@ -125,34 +252,56 @@ function createMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Preferences',
-          accelerator: 'CmdOrCtrl+,',
+          label: 'Backup Data',
+          accelerator: 'CmdOrCtrl+B',
           click: () => {
-            // Open preferences window
+            if (mainWindow) {
+              mainWindow.webContents.send('backup-data');
+            }
           }
         },
         { type: 'separator' },
-        {
-          label: 'Exit',
-          accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
-          click: () => {
-            app.quit();
+        ...(!isMac ? [
+          {
+            label: 'Exit',
+            accelerator: 'Ctrl+Q',
+            click: () => app.quit()
           }
-        }
+        ] : [])
       ]
     },
+    
+    // Edit menu
     {
       label: 'Edit',
       submenu: [
-        { label: 'Undo', accelerator: 'CmdOrCtrl+Z', role: 'undo' },
-        { label: 'Redo', accelerator: 'Shift+CmdOrCtrl+Z', role: 'redo' },
+        { role: 'undo' },
+        { role: 'redo' },
         { type: 'separator' },
-        { label: 'Cut', accelerator: 'CmdOrCtrl+X', role: 'cut' },
-        { label: 'Copy', accelerator: 'CmdOrCtrl+C', role: 'copy' },
-        { label: 'Paste', accelerator: 'CmdOrCtrl+V', role: 'paste' },
-        { label: 'Select All', accelerator: 'CmdOrCtrl+A', role: 'selectall' }
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        ...(isMac ? [
+          { role: 'pasteAndMatchStyle' },
+          { role: 'delete' },
+          { role: 'selectAll' },
+          { type: 'separator' },
+          {
+            label: 'Speech',
+            submenu: [
+              { role: 'startspeaking' },
+              { role: 'stopspeaking' }
+            ]
+          }
+        ] : [
+          { role: 'delete' },
+          { type: 'separator' },
+          { role: 'selectAll' }
+        ])
       ]
     },
+    
+    // View menu
     {
       label: 'View',
       submenu: [
@@ -160,51 +309,87 @@ function createMenu() {
           label: 'Dashboard',
           accelerator: 'CmdOrCtrl+1',
           click: () => {
-            mainWindow.webContents.send('navigate-to', 'dashboard');
+            if (mainWindow) {
+              mainWindow.webContents.send('navigate-to', 'dashboard');
+            }
           }
         },
         {
           label: 'Orders',
           accelerator: 'CmdOrCtrl+2',
           click: () => {
-            mainWindow.webContents.send('navigate-to', 'orders');
+            if (mainWindow) {
+              mainWindow.webContents.send('navigate-to', 'orders');
+            }
+          }
+        },
+        {
+          label: 'Customers',
+          accelerator: 'CmdOrCtrl+3',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('navigate-to', 'customers');
+            }
+          }
+        },
+        {
+          label: 'Inventory',
+          accelerator: 'CmdOrCtrl+4',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('navigate-to', 'inventory');
+            }
           }
         },
         {
           label: 'Production',
-          accelerator: 'CmdOrCtrl+3',
+          accelerator: 'CmdOrCtrl+5',
           click: () => {
-            mainWindow.webContents.send('navigate-to', 'production');
+            if (mainWindow) {
+              mainWindow.webContents.send('navigate-to', 'production');
+            }
           }
         },
         {
           label: 'Reports',
-          accelerator: 'CmdOrCtrl+4',
+          accelerator: 'CmdOrCtrl+6',
           click: () => {
-            mainWindow.webContents.send('navigate-to', 'reports');
+            if (mainWindow) {
+              mainWindow.webContents.send('navigate-to', 'reports');
+            }
           }
         },
         { type: 'separator' },
-        { label: 'Reload', accelerator: 'CmdOrCtrl+R', role: 'reload' },
-        { label: 'Force Reload', accelerator: 'CmdOrCtrl+Shift+R', role: 'forceReload' },
-        { label: 'Toggle Developer Tools', accelerator: 'F12', role: 'toggleDevTools' },
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
         { type: 'separator' },
-        { label: 'Actual Size', accelerator: 'CmdOrCtrl+0', role: 'resetZoom' },
-        { label: 'Zoom In', accelerator: 'CmdOrCtrl+Plus', role: 'zoomIn' },
-        { label: 'Zoom Out', accelerator: 'CmdOrCtrl+-', role: 'zoomOut' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
         { type: 'separator' },
-        { label: 'Toggle Fullscreen', accelerator: 'F11', role: 'togglefullscreen' }
+        { role: 'togglefullscreen' }
       ]
     },
+    
+    // Window menu
     {
       label: 'Window',
       submenu: [
-        { label: 'Minimize', accelerator: 'CmdOrCtrl+M', role: 'minimize' },
-        { label: 'Close', accelerator: 'CmdOrCtrl+W', role: 'close' }
+        { role: 'minimize' },
+        { role: 'close' },
+        ...(isMac ? [
+          { type: 'separator' },
+          { role: 'front' },
+          { type: 'separator' },
+          { role: 'window' }
+        ] : [])
       ]
     },
+    
+    // Help menu
     {
-      label: 'Help',
+      role: 'help',
       submenu: [
         {
           label: 'About SS Mudyf Order Tracker',
@@ -218,9 +403,24 @@ function createMenu() {
         },
         {
           label: 'Keyboard Shortcuts',
+          accelerator: 'F1',
           click: showKeyboardShortcuts
         },
         { type: 'separator' },
+        {
+          label: 'Check for Updates',
+          click: () => {
+            if (autoUpdater) {
+              autoUpdater.checkForUpdatesAndNotify();
+            } else {
+              dialog.showMessageBox(mainWindow, {
+                type: 'info',
+                title: 'Updates',
+                message: 'Auto-updater not available in development mode'
+              });
+            }
+          }
+        },
         {
           label: 'Report Issue',
           click: () => {
@@ -231,70 +431,68 @@ function createMenu() {
     }
   ];
 
-  // macOS specific menu adjustments
-  if (process.platform === 'darwin') {
-    template.unshift({
-      label: app.getName(),
-      submenu: [
-        { label: 'About ' + app.getName(), role: 'about' },
-        { type: 'separator' },
-        { label: 'Services', role: 'services', submenu: [] },
-        { type: 'separator' },
-        { label: 'Hide ' + app.getName(), accelerator: 'Command+H', role: 'hide' },
-        { label: 'Hide Others', accelerator: 'Command+Shift+H', role: 'hideothers' },
-        { label: 'Show All', role: 'unhide' },
-        { type: 'separator' },
-        { label: 'Quit', accelerator: 'Command+Q', click: () => app.quit() }
-      ]
-    });
-  }
-
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 }
 
 // Menu functions
 async function exportData() {
-  const result = await dialog.showSaveDialog(mainWindow, {
-    title: 'Export SS Mudyf Data',
-    defaultPath: `ss-mudyf-backup-${new Date().toISOString().split('T')[0]}.json`,
-    filters: [
-      { name: 'JSON Files', extensions: ['json'] },
-      { name: 'All Files', extensions: ['*'] }
-    ]
-  });
+  if (!mainWindow) return;
+  
+  try {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export SS Mudyf Data',
+      defaultPath: `ss-mudyf-backup-${new Date().toISOString().split('T')[0]}.json`,
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
 
-  if (!result.canceled) {
-    mainWindow.webContents.send('export-data', result.filePath);
+    if (!result.canceled && result.filePath) {
+      mainWindow.webContents.send('export-data', result.filePath);
+    }
+  } catch (error) {
+    console.error('Export dialog error:', error);
   }
 }
 
 async function importData() {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Import SS Mudyf Data',
-    filters: [
-      { name: 'JSON Files', extensions: ['json'] },
-      { name: 'All Files', extensions: ['*'] }
-    ],
-    properties: ['openFile']
-  });
+  if (!mainWindow) return;
+  
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Import SS Mudyf Data',
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
+      properties: ['openFile']
+    });
 
-  if (!result.canceled && result.filePaths.length > 0) {
-    mainWindow.webContents.send('import-data', result.filePaths[0]);
+    if (!result.canceled && result.filePaths.length > 0) {
+      mainWindow.webContents.send('import-data', result.filePaths[0]);
+    }
+  } catch (error) {
+    console.error('Import dialog error:', error);
   }
 }
 
 function showAbout() {
+  if (!mainWindow) return;
+  
   dialog.showMessageBox(mainWindow, {
     type: 'info',
     title: 'About SS Mudyf Order Tracker',
     message: 'SS Mudyf Order Tracking System',
-    detail: `Version: 1.0.0\nBuilt for: SS Mudyf Textile CMT Factory\nLocation: Eswatini\n\nA comprehensive order tracking and production management system designed specifically for textile manufacturing operations.\n\n© 2025 SS Mudyf. All rights reserved.`,
+    detail: `Version: ${app.getVersion()}\nBuilt for: SS Mudyf Textile CMT Factory\nLocation: Eswatini\n\nA comprehensive order tracking and production management system designed specifically for textile manufacturing operations.\n\n© 2025 SS Mudyf. All rights reserved.`,
     buttons: ['OK']
   });
 }
 
 function showKeyboardShortcuts() {
+  if (!mainWindow) return;
+  
   dialog.showMessageBox(mainWindow, {
     type: 'info',
     title: 'Keyboard Shortcuts',
@@ -302,18 +500,22 @@ function showKeyboardShortcuts() {
     detail: `Navigation:
 Ctrl+1 - Dashboard
 Ctrl+2 - Orders
-Ctrl+3 - Production
-Ctrl+4 - Reports
+Ctrl+3 - Customers
+Ctrl+4 - Inventory
+Ctrl+5 - Production
+Ctrl+6 - Reports
 
 Actions:
 Ctrl+N - New Order
 Ctrl+E - Export Data
 Ctrl+I - Import Data
-Ctrl+R - Refresh
+Ctrl+B - Backup Data
 
 System:
+F1 - Help (Keyboard Shortcuts)
 F11 - Toggle Fullscreen
-F12 - Developer Tools
+F12 - Developer Tools (Dev Mode)
+Ctrl+R - Reload
 Ctrl+Q - Exit Application`,
     buttons: ['OK']
   });
@@ -324,28 +526,42 @@ ipcMain.handle('get-app-version', () => {
   return app.getVersion();
 });
 
+ipcMain.handle('get-app-path', () => {
+  return app.getAppPath();
+});
+
 ipcMain.handle('show-save-dialog', async (event, options) => {
-  const result = await dialog.showSaveDialog(mainWindow, options);
-  return result;
+  if (!mainWindow) return { canceled: true };
+  return await dialog.showSaveDialog(mainWindow, options);
 });
 
 ipcMain.handle('show-open-dialog', async (event, options) => {
-  const result = await dialog.showOpenDialog(mainWindow, options);
-  return result;
+  if (!mainWindow) return { canceled: true };
+  return await dialog.showOpenDialog(mainWindow, options);
 });
 
 ipcMain.handle('show-message-box', async (event, options) => {
-  const result = await dialog.showMessageBox(mainWindow, options);
-  return result;
+  if (!mainWindow) return { response: 0 };
+  return await dialog.showMessageBox(mainWindow, options);
+});
+
+ipcMain.handle('show-error-box', (event, title, content) => {
+  dialog.showErrorBox(title, content);
 });
 
 // App event handlers
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Set app user model ID for Windows notifications
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('com.ssmudyf.ordertracker');
+  }
+  
   createSplashWindow();
   
+  // Show splash for 2-3 seconds before showing main window
   setTimeout(() => {
     createMainWindow();
-  }, 2000); // Show splash for 2 seconds
+  }, isDev ? 1000 : 2500);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -353,8 +569,8 @@ app.whenReady().then(() => {
     }
   });
 
-  // Auto updater
-  if (!isDev) {
+  // Initialize auto updater
+  if (autoUpdater && !isDev) {
     autoUpdater.checkForUpdatesAndNotify();
   }
 });
@@ -371,33 +587,84 @@ app.on('web-contents-created', (event, contents) => {
     navigationEvent.preventDefault();
     shell.openExternal(navigationUrl);
   });
+  
+  // Prevent navigation to external URLs
+  contents.on('will-navigate', (navigationEvent, navigationUrl) => {
+    const parsedUrl = new URL(navigationUrl);
+    const currentUrl = contents.getURL();
+    
+    if (parsedUrl.origin !== new URL(currentUrl).origin) {
+      navigationEvent.preventDefault();
+      shell.openExternal(navigationUrl);
+    }
+  });
 });
 
-// Auto-updater events
-autoUpdater.on('checking-for-update', () => {
-  console.log('Checking for update...');
+// Handle certificate errors in development
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+  if (isDev) {
+    event.preventDefault();
+    callback(true);
+  } else {
+    callback(false);
+  }
 });
 
-autoUpdater.on('update-available', (info) => {
-  console.log('Update available.');
+// Auto-updater events (if available)
+if (autoUpdater && !isDev) {
+  autoUpdater.on('checking-for-update', () => {
+    console.log('Checking for update...');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    console.log('Update available.');
+    if (mainWindow) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Update Available',
+        message: 'A new version is available. It will be downloaded in the background.',
+        buttons: ['OK']
+      });
+    }
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('Update not available.');
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.log('Error in auto-updater:', err);
+  });
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    let logMessage = `Download speed: ${progressObj.bytesPerSecond}`;
+    logMessage = `${logMessage} - Downloaded ${progressObj.percent}%`;
+    logMessage = `${logMessage} (${progressObj.transferred}/${progressObj.total})`;
+    console.log(logMessage);
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('Update downloaded');
+    if (mainWindow) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Update Ready',
+        message: 'Update downloaded. Application will restart to apply the update.',
+        buttons: ['Restart Now', 'Restart Later']
+      }).then((result) => {
+        if (result.response === 0) {
+          autoUpdater.quitAndInstall();
+        }
+      });
+    }
+  });
+}
+
+// Handle unhandled errors
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
 });
 
-autoUpdater.on('update-not-available', (info) => {
-  console.log('Update not available.');
-});
-
-autoUpdater.on('error', (err) => {
-  console.log('Error in auto-updater. ' + err);
-});
-
-autoUpdater.on('download-progress', (progressObj) => {
-  let log_message = "Download speed: " + progressObj.bytesPerSecond;
-  log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
-  log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-  console.log(log_message);
-});
-
-autoUpdater.on('update-downloaded', (info) => {
-  console.log('Update downloaded');
-  autoUpdater.quitAndInstall();
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });

@@ -1,7 +1,3 @@
-// ==============================================
-// public/splash.html - Splash Screen
-// ==============================================
-/*
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,11 +15,13 @@
             justify-content: center;
             height: 100vh;
             color: white;
+            overflow: hidden;
         }
         
         .splash-container {
             text-align: center;
             padding: 20px;
+            position: relative;
         }
         
         .logo {
@@ -33,10 +31,18 @@
             animation: pulse 2s infinite;
         }
         
+        .company-name {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            opacity: 0.95;
+        }
+        
         .subtitle {
             font-size: 14px;
             margin-bottom: 30px;
-            opacity: 0.9;
+            opacity: 0.8;
+            letter-spacing: 1px;
         }
         
         .loading {
@@ -45,15 +51,23 @@
             background: rgba(255, 255, 255, 0.3);
             border-radius: 2px;
             overflow: hidden;
-            margin: 0 auto;
+            margin: 0 auto 20px;
+            position: relative;
         }
         
         .loading-bar {
             width: 100%;
             height: 100%;
-            background: white;
+            background: linear-gradient(90deg, rgba(255,255,255,0.8), rgba(255,255,255,1), rgba(255,255,255,0.8));
             transform: translateX(-100%);
             animation: loading 2s ease-in-out infinite;
+        }
+        
+        .status {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 20px;
+            animation: fadeInOut 3s infinite;
         }
         
         .version {
@@ -61,14 +75,22 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 12px;
+            font-size: 11px;
+            opacity: 0.6;
+            letter-spacing: 0.5px;
+        }
+        
+        .location {
+            font-size: 11px;
             opacity: 0.7;
+            margin-top: 10px;
+            font-style: italic;
         }
         
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
         }
         
         @keyframes loading {
@@ -76,23 +98,122 @@
             50% { transform: translateX(0); }
             100% { transform: translateX(100%); }
         }
+        
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+        
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .particle:nth-child(1) { left: 10%; animation-delay: 0s; width: 4px; height: 4px; }
+        .particle:nth-child(2) { left: 20%; animation-delay: 2s; width: 6px; height: 6px; }
+        .particle:nth-child(3) { left: 30%; animation-delay: 4s; width: 3px; height: 3px; }
+        .particle:nth-child(4) { right: 10%; animation-delay: 1s; width: 5px; height: 5px; }
+        .particle:nth-child(5) { right: 20%; animation-delay: 3s; width: 4px; height: 4px; }
+        .particle:nth-child(6) { right: 30%; animation-delay: 5s; width: 7px; height: 7px; }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(100vh); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.8s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
-    <div class="splash-container">
-        <div class="logo">🏭 SS Mudyf</div>
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+    
+    <div class="splash-container fade-in">
+        <div class="logo">🏭</div>
+        <div class="company-name">SS Mudyf</div>
         <div class="subtitle">Order Tracking System</div>
+        
+        <div class="status" id="status">Initializing application...</div>
+        
         <div class="loading">
             <div class="loading-bar"></div>
         </div>
-        <p style="margin-top: 20px; font-size: 12px; opacity: 0.8;">
+        
+        <div class="location">
             Textile CMT Factory - Eswatini
-        </p>
+        </div>
     </div>
     
     <div class="version">
         Version 1.0.0
     </div>
+    
+    <script>
+        // Update status messages
+        const statusMessages = [
+            'Initializing application...',
+            'Loading components...',
+            'Connecting to database...',
+            'Setting up workspace...',
+            'Almost ready...'
+        ];
+        
+        let currentMessage = 0;
+        const statusElement = document.getElementById('status');
+        
+        function updateStatus() {
+            if (currentMessage < statusMessages.length) {
+                statusElement.textContent = statusMessages[currentMessage];
+                currentMessage++;
+                setTimeout(updateStatus, 500);
+            } else {
+                statusElement.textContent = 'Starting SS Mudyf...';
+            }
+        }
+        
+        // Start updating status after initial delay
+        setTimeout(updateStatus, 300);
+        
+        // Add some interactivity
+        document.addEventListener('click', function() {
+            document.body.style.background = 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)';
+            setTimeout(() => {
+                document.body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            }, 200);
+        });
+        
+        // Preload main application resources
+        window.addEventListener('load', function() {
+            // This helps with transition to main app
+            console.log('SS Mudyf splash screen loaded');
+        });
+    </script>
 </body>
 </html>
-*/
