@@ -1,12 +1,12 @@
 // ==============================================
-// src/components/OrderManager.js - UPDATED WITH PER-UNIT PRICING & AUTO-CALCULATION
+// src/components/OrderManager.js - UPDATED WITH DYNAMIC PRODUCTION LINES
 // ==============================================
 import React, { useState, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
 import { currencyUtils } from '../utils/currency';
 
 const OrderManager = () => {
-  const { orders, customers, actions } = useData();
+  const { orders, customers, productionLines, actions } = useData();
   const [showAddOrder, setShowAddOrder] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
   const [sortBy, setSortBy] = useState('delivery_date');
@@ -635,10 +635,11 @@ const OrderManager = () => {
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select Line</option>
-                      <option value="Line A">Line A</option>
-                      <option value="Line B">Line B</option>
-                      <option value="Line C">Line C</option>
-                      <option value="Line D">Line D</option>
+                      {productionLines
+                        .filter(line => line.status === 'active')
+                        .map(line => (
+                          <option key={line.id} value={line.name}>{line.name}</option>
+                        ))}
                     </select>
                   </div>
                   <div>
