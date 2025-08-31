@@ -1,5 +1,5 @@
 // ==============================================
-// src/components/OrderManager.js - FIXED WITH DATA CONTEXT INTEGRATION
+// src/components/OrderManager.js - UPDATED WITH PER-UNIT PRICING & AUTO-CALCULATION
 // ==============================================
 import React, { useState, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
@@ -22,20 +22,32 @@ const OrderManager = () => {
     brand: '',
     customerId: '',
     deliveryDate: '',
-    price: '',
+    pricePerUnit: '',
+    totalUnits: '',
+    totalValue: 0,
     colour: '',
     productionLine: '',
     status: 'pending',
-    totalUnits: '',
     priority: 'Medium'
   });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setOrderForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setOrderForm(prev => {
+      const updatedForm = {
+        ...prev,
+        [name]: value
+      };
+
+      // Auto-calculate total value when price per unit or total units change
+      if (name === 'pricePerUnit' || name === 'totalUnits') {
+        const pricePerUnit = parseFloat(name === 'pricePerUnit' ? value : prev.pricePerUnit) || 0;
+        const totalUnits = parseInt(name === 'totalUnits' ? value : prev.totalUnits) || 0;
+        updatedForm.totalValue = pricePerUnit * totalUnits;
+      }
+
+      return updatedForm;
+    });
   };
 
   const resetForm = () => {
@@ -47,11 +59,12 @@ const OrderManager = () => {
       brand: '',
       customerId: '',
       deliveryDate: '',
-      price: '',
+      pricePerUnit: '',
+      totalUnits: '',
+      totalValue: 0,
       colour: '',
       productionLine: '',
       status: 'pending',
-      totalUnits: '',
       priority: 'Medium'
     });
   };
@@ -70,11 +83,13 @@ const OrderManager = () => {
       customer_id: parseInt(orderForm.customerId),
       customer_name: customerName,
       delivery_date: orderForm.deliveryDate,
-      price: parseFloat(orderForm.price) || 0,
+      price_per_unit: parseFloat(orderForm.pricePerUnit) || 0,
+      total_units: parseInt(orderForm.totalUnits) || 0,
+      total_value: parseFloat(orderForm.totalValue) || 0,
+      price: parseFloat(orderForm.totalValue) || 0, // Keep for backwards compatibility
       colour: orderForm.colour,
       production_line: orderForm.productionLine,
       status: orderForm.status,
-      total_units: parseInt(orderForm.totalUnits) || 0,
       priority: orderForm.priority
     };
     
@@ -91,6 +106,12 @@ const OrderManager = () => {
 
   const handleEdit = (order) => {
     setEditingOrder(order);
+    
+    // Calculate price per unit and total value from existing data
+    const totalUnits = order.total_units || 0;
+    const totalValue = order.total_value || order.price || 0;
+    const pricePerUnit = totalUnits > 0 ? totalValue / totalUnits : (order.price_per_unit || 0);
+    
     setOrderForm({
       orderNumber: order.order_number || '',
       styleNumber: order.style_number || '',
@@ -99,11 +120,12 @@ const OrderManager = () => {
       brand: order.brand || '',
       customerId: order.customer_id?.toString() || '',
       deliveryDate: order.delivery_date || '',
-      price: order.price?.toString() || '',
+      pricePerUnit: pricePerUnit.toString(),
+      totalUnits: totalUnits.toString(),
+      totalValue: totalValue,
       colour: order.colour || '',
       productionLine: order.production_line || '',
       status: order.status || 'pending',
-      totalUnits: order.total_units?.toString() || '',
       priority: order.priority || 'Medium'
     });
     setShowAddOrder(true);
@@ -146,8 +168,8 @@ const OrderManager = () => {
           valueB = new Date(b.delivery_date || '1970-01-01');
           break;
         case 'price':
-          valueA = a.price || 0;
-          valueB = b.price || 0;
+          valueA = a.total_value || a.price || 0;
+          valueB = b.total_value || b.price || 0;
           break;
         case 'created_at':
           valueA = new Date(a.created_at || '1970-01-01');
@@ -200,7 +222,7 @@ const OrderManager = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Order Management</h2>
-          <p className="text-gray-600 mt-1">Manage all your textile orders in one place</p>
+          <p className="text-gray-600 mt-1">Manage all your textile orders with per-unit pricing</p>
         </div>
         <button
           onClick={() => {
@@ -264,7 +286,7 @@ const OrderManager = () => {
               <option value="delivery_date">Delivery Date</option>
               <option value="order_number">Order Number</option>
               <option value="style_number">Style Number</option>
-              <option value="price">Price</option>
+              <option value="price">Total Value</option>
               <option value="customer_name">Customer</option>
               <option value="created_at">Created Date</option>
             </select>
@@ -340,7 +362,10 @@ const OrderManager = () => {
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('price')}
                 >
-                  Price {getSortIcon('price')}
+                  Unit Price {getSortIcon('price')}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Total Value
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Details
@@ -375,14 +400,17 @@ const OrderManager = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'N/A'}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {formatCurrency(order.price_per_unit || ((order.total_value || order.price || 0) / (order.total_units || 1)))}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                    {formatCurrency(order.price)}
+                    {formatCurrency(order.total_value || order.price || 0)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="space-y-1">
                       <div>Color: {order.colour || 'N/A'}</div>
                       <div>Line: {order.production_line || 'N/A'}</div>
-                      <div>Units: {(order.total_units || 0).toLocaleString()}</div>
+                      <div className="font-medium text-blue-600">Units: {(order.total_units || 0).toLocaleString()}</div>
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(order.priority)}`}>
                         {order.priority || 'Medium'}
                       </span>
@@ -529,6 +557,49 @@ const OrderManager = () => {
                 </div>
               </div>
 
+              {/* Pricing Information */}
+              <div>
+                <h4 className="text-lg font-medium text-gray-900 mb-4">Pricing & Quantity</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Total Units *</label>
+                    <input
+                      type="number"
+                      name="totalUnits"
+                      placeholder="500"
+                      min="1"
+                      value={orderForm.totalUnits}
+                      onChange={handleInputChange}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Price Per Unit (Emalangeni) *</label>
+                    <input
+                      type="number"
+                      name="pricePerUnit"
+                      placeholder="46.25"
+                      step="0.01"
+                      min="0.01"
+                      value={orderForm.pricePerUnit}
+                      onChange={handleInputChange}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Total Value</label>
+                    <div className="w-full border border-gray-200 rounded-md px-3 py-2 bg-gray-50 text-gray-900 font-medium">
+                      {formatCurrency(orderForm.totalValue)}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Auto-calculated: {orderForm.totalUnits || 0} × {formatCurrency(parseFloat(orderForm.pricePerUnit) || 0)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Production Information */}
               <div>
                 <h4 className="text-lg font-medium text-gray-900 mb-4">Production Details</h4>
@@ -542,30 +613,6 @@ const OrderManager = () => {
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (Emalangeni)</label>
-                    <input
-                      type="number"
-                      name="price"
-                      placeholder="25000.00"
-                      step="0.01"
-                      value={orderForm.price}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Total Units</label>
-                    <input
-                      type="number"
-                      name="totalUnits"
-                      placeholder="500"
-                      min="1"
-                      value={orderForm.totalUnits}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
