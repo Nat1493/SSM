@@ -1,5 +1,5 @@
 // ==============================================
-// src/contexts/DataContext.js - Enhanced with Daily Score Coordination
+// src/contexts/DataContext.js - FIXED Production Lines Persistence Issue
 // ==============================================
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 
@@ -59,7 +59,10 @@ const ACTION_TYPES = {
   // Loading states
   SET_LOADING: 'SET_LOADING',
   SET_ERROR: 'SET_ERROR',
-  CLEAR_ERROR: 'CLEAR_ERROR'
+  CLEAR_ERROR: 'CLEAR_ERROR',
+  
+  // Data initialization flag
+  SET_INITIALIZED: 'SET_INITIALIZED'
 };
 
 // Initial state with enhanced daily score tracking
@@ -120,7 +123,8 @@ const initialState = {
     analytics: false
   },
   error: null,
-  lastSaved: null
+  lastSaved: null,
+  initialized: false // Add initialization flag
 };
 
 // Enhanced local storage utilities
@@ -143,6 +147,7 @@ const StorageUtils = {
       const serialized = JSON.stringify(data);
       localStorage.setItem(key, serialized);
       localStorage.setItem('ssMudyf_lastSaved', new Date().toISOString());
+      console.log(`💾 Saved ${key} with ${Array.isArray(data) ? data.length : 'N/A'} items`);
       return true;
     } catch (error) {
       console.error('Failed to save to localStorage:', error);
@@ -153,7 +158,9 @@ const StorageUtils = {
   load: (key, defaultValue = []) => {
     try {
       const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : defaultValue;
+      const result = item ? JSON.parse(item) : defaultValue;
+      console.log(`📂 Loaded ${key}: ${Array.isArray(result) ? result.length : 'N/A'} items`);
+      return result;
     } catch (error) {
       console.error('Failed to load from localStorage:', error);
       return defaultValue;
@@ -214,7 +221,7 @@ const StorageUtils = {
   }
 };
 
-// Enhanced analytics utilities
+// Enhanced analytics utilities (keeping the same as before)
 const AnalyticsUtils = {
   calculateEfficiencyMetrics: (dailyScores, productionLines) => {
     if (!dailyScores.length) return { overall: 0, byLine: {} };
@@ -468,14 +475,19 @@ const dataReducer = (state, action) => {
         productionLines: action.payload.updatedLines || state.productionLines
       };
 
-    // Production Lines - Enhanced
+    // Production Lines - Enhanced with better logging
     case ACTION_TYPES.SET_PRODUCTION_LINES:
+      console.log('🔧 Setting production lines:', action.payload.length, 'lines');
       return { ...state, productionLines: action.payload };
     
     case ACTION_TYPES.ADD_PRODUCTION_LINE:
-      return { ...state, productionLines: [action.payload, ...state.productionLines] };
+      console.log('🔧 Adding production line:', action.payload.name);
+      const newProductionLines = [action.payload, ...state.productionLines];
+      console.log('🔧 New total production lines:', newProductionLines.length);
+      return { ...state, productionLines: newProductionLines };
     
     case ACTION_TYPES.UPDATE_PRODUCTION_LINE:
+      console.log('🔧 Updating production line:', action.payload.id);
       return {
         ...state,
         productionLines: state.productionLines.map(line =>
@@ -484,6 +496,7 @@ const dataReducer = (state, action) => {
       };
     
     case ACTION_TYPES.DELETE_PRODUCTION_LINE:
+      console.log('🔧 Deleting production line:', action.payload);
       // When deleting a production line, clean up related daily scores
       const remainingLines = state.productionLines.filter(line => line.id !== action.payload);
       const deletedLine = state.productionLines.find(line => line.id === action.payload);
@@ -566,6 +579,10 @@ const dataReducer = (state, action) => {
     case ACTION_TYPES.CLEAR_ERROR:
       return { ...state, error: null };
 
+    // Initialization flag
+    case ACTION_TYPES.SET_INITIALIZED:
+      return { ...state, initialized: action.payload };
+
     default:
       return state;
   }
@@ -616,28 +633,6 @@ const getMockDailyScores = () => [
     variance_percentage: 7.2,
     notes: 'Exceeded target significantly, great teamwork',
     created_at: '2025-08-31T17:00:00.000Z'
-  },
-  {
-    id: 3,
-    production_line: 'Line A',
-    date: '2025-08-30',
-    target_units: 300,
-    actual_units: 285,
-    operator_count: 6,
-    hours_worked: 8,
-    defective_units: 5,
-    downtime_minutes: 30,
-    quality_score: 95,
-    efficiency_percentage: 95.0,
-    quality_rate: 98.2,
-    productivity_rate: 5.94,
-    oee_score: 93.3,
-    units_per_operator: 48,
-    units_per_hour: 35.6,
-    variance_from_target: -15,
-    variance_percentage: -5.0,
-    notes: 'Good performance, some downtime for maintenance',
-    created_at: '2025-08-30T17:00:00.000Z'
   }
 ];
 
@@ -651,7 +646,7 @@ const getMockProductionLines = () => [
     specialization: 'Shirts & Blouses',
     status: 'active',
     notes: 'High-quality garment production line',
-    efficiency: 96.7, // Will be updated from daily scores
+    efficiency: 96.7,
     currentOrder: 'ORD-2025-001',
     lastScoreUpdate: '2025-08-31T17:00:00.000Z',
     created_at: '2025-01-01T00:00:00.000Z'
@@ -669,20 +664,89 @@ const getMockProductionLines = () => [
     currentOrder: 'ORD-2025-002',
     lastScoreUpdate: '2025-08-31T17:00:00.000Z',
     created_at: '2025-01-01T00:00:00.000Z'
-  },
+  }
+];
+
+// Mock data for other entities (keeping the same as before)
+const getMockOrders = () => [
   {
-    id: 'line-c',
-    name: 'Line C',
-    location: 'Factory Floor West',
-    capacity: 400,
-    operatorCount: 8,
-    specialization: 'Dresses & Skirts',
-    status: 'maintenance',
-    notes: 'Under maintenance - resuming Monday',
-    efficiency: 78.9,
-    currentOrder: null,
-    lastScoreUpdate: '2025-08-29T17:00:00.000Z',
-    created_at: '2025-01-01T00:00:00.000Z'
+    id: 1,
+    order_number: 'ORD-2025-001',
+    style_number: 'STY-001',
+    cutsheet_number: 'CS-001',
+    account: 'Fashion Plus',
+    brand: 'Premium',
+    customer_id: 1,
+    customer_name: 'Fashion Plus Ltd',
+    delivery_date: '2025-09-15',
+    price_per_unit: 46.25,
+    total_units: 500,
+    total_value: 23125.00,
+    price: 23125.00,
+    colour: 'Navy Blue',
+    production_line: 'Line A',
+    status: 'in_production',
+    created_at: '2025-08-20T10:30:00.000Z',
+    updated_at: '2025-08-20T10:30:00.000Z',
+    customSizes: ['XS', 'S', 'M', 'L', 'XL', 'Custom-38', 'Custom-42'],
+    priority: 'High'
+  }
+];
+
+const getMockCustomers = () => [
+  {
+    id: 1,
+    name: 'Fashion Plus Ltd',
+    contact_person: 'Sarah Johnson',
+    email: 'sarah@fashionplus.com',
+    phone: '+268 78901234',
+    address: 'Mbabane Industrial Area, Eswatini',
+    country: 'Eswatini',
+    category: 'Premium',
+    notes: 'Long-term client, prefers premium quality fabrics',
+    created_at: '2025-01-15T10:30:00.000Z',
+    total_orders: 15,
+    total_value: 346875.00,
+    last_order: '2025-08-20'
+  }
+];
+
+const getMockInventory = () => [
+  {
+    id: 1,
+    type: 'fabric',
+    name: 'Cotton Denim',
+    supplier: 'Textile Suppliers Ltd',
+    quantity_received: 500,
+    quantity_used: 120,
+    quantity_available: 380,
+    unit: 'meters',
+    cost_per_unit: 231.25,
+    received_date: '2025-08-20',
+    low_stock_threshold: 50,
+    description: 'High-quality cotton denim, 14oz weight',
+    color: 'Indigo Blue',
+    category: 'Denim',
+    created_at: '2025-08-20',
+    last_updated: '2025-08-28',
+    total_value: 115625.00
+  }
+];
+
+const getMockProductionStages = () => [
+  {
+    id: 1,
+    order_id: 1,
+    stage: 'cutting',
+    size: 'M',
+    units_completed: 150,
+    date_completed: '2025-08-28',
+    production_line: 'Line A',
+    operator: 'John Doe',
+    notes: 'Pattern cutting completed successfully',
+    quality_check: 'pass',
+    efficiency: 95.2,
+    created_at: '2025-08-28T10:30:00.000Z'
   }
 ];
 
@@ -690,17 +754,23 @@ const getMockProductionLines = () => [
 export const DataProvider = ({ children }) => {
   const [state, dispatch] = useReducer(dataReducer, initialState);
 
-  // Load data from localStorage on initialization
+  // FIXED: Load data from localStorage on initialization with proper ordering
   useEffect(() => {
-    const loadInitialData = () => {
+    const loadInitialData = async () => {
       try {
+        console.log('🚀 Starting data initialization...');
+        
+        // Load settings first to ensure autoSave is available
+        const settings = StorageUtils.load(STORAGE_KEYS.SETTINGS, initialState.settings);
+        dispatch({ type: ACTION_TYPES.SET_SETTINGS, payload: settings });
+        
+        // Load all data
         const orders = StorageUtils.load(STORAGE_KEYS.ORDERS, getMockOrders());
         const customers = StorageUtils.load(STORAGE_KEYS.CUSTOMERS, getMockCustomers());
         const inventory = StorageUtils.load(STORAGE_KEYS.INVENTORY, getMockInventory());
         const productionStages = StorageUtils.load(STORAGE_KEYS.PRODUCTION_STAGES, getMockProductionStages());
         const dailyScores = StorageUtils.load(STORAGE_KEYS.DAILY_SCORES, getMockDailyScores());
         const productionLines = StorageUtils.load(STORAGE_KEYS.PRODUCTION_LINES, getMockProductionLines());
-        const settings = StorageUtils.load(STORAGE_KEYS.SETTINGS, initialState.settings);
         const performanceMetrics = StorageUtils.load(STORAGE_KEYS.PERFORMANCE_METRICS, initialState.performanceMetrics);
 
         // Dispatch loaded data
@@ -710,8 +780,12 @@ export const DataProvider = ({ children }) => {
         dispatch({ type: ACTION_TYPES.SET_PRODUCTION_STAGES, payload: productionStages });
         dispatch({ type: ACTION_TYPES.SET_DAILY_SCORES, payload: dailyScores });
         dispatch({ type: ACTION_TYPES.SET_PRODUCTION_LINES, payload: productionLines });
-        dispatch({ type: ACTION_TYPES.SET_SETTINGS, payload: settings });
         dispatch({ type: ACTION_TYPES.UPDATE_PERFORMANCE_METRICS, payload: performanceMetrics });
+        
+        // Mark as initialized to prevent auto-save during initial load
+        dispatch({ type: ACTION_TYPES.SET_INITIALIZED, payload: true });
+        
+        console.log('✅ Data initialization completed');
       } catch (error) {
         console.error('Failed to load initial data:', error);
         dispatch({ type: ACTION_TYPES.SET_ERROR, payload: 'Failed to load application data' });
@@ -721,50 +795,61 @@ export const DataProvider = ({ children }) => {
     loadInitialData();
   }, []);
 
-  // Auto-save enhanced data to localStorage when data changes
+  // FIXED: Auto-save with initialization check to prevent overwriting during initial load
   useEffect(() => {
-    if (state.settings.autoSave && state.orders.length > 0) {
+    if (state.initialized && state.settings.autoSave && state.orders.length > 0) {
+      console.log('💾 Auto-saving orders...');
       StorageUtils.save(STORAGE_KEYS.ORDERS, state.orders);
     }
-  }, [state.orders, state.settings.autoSave]);
+  }, [state.orders, state.settings.autoSave, state.initialized]);
 
   useEffect(() => {
-    if (state.settings.autoSave && state.customers.length > 0) {
+    if (state.initialized && state.settings.autoSave && state.customers.length > 0) {
+      console.log('💾 Auto-saving customers...');
       StorageUtils.save(STORAGE_KEYS.CUSTOMERS, state.customers);
     }
-  }, [state.customers, state.settings.autoSave]);
+  }, [state.customers, state.settings.autoSave, state.initialized]);
 
   useEffect(() => {
-    if (state.settings.autoSave && state.inventory.length > 0) {
+    if (state.initialized && state.settings.autoSave && state.inventory.length > 0) {
+      console.log('💾 Auto-saving inventory...');
       StorageUtils.save(STORAGE_KEYS.INVENTORY, state.inventory);
     }
-  }, [state.inventory, state.settings.autoSave]);
+  }, [state.inventory, state.settings.autoSave, state.initialized]);
 
   useEffect(() => {
-    if (state.settings.autoSave) {
+    if (state.initialized && state.settings.autoSave) {
+      console.log('💾 Auto-saving production stages...');
       StorageUtils.save(STORAGE_KEYS.PRODUCTION_STAGES, state.productionStages);
     }
-  }, [state.productionStages, state.settings.autoSave]);
+  }, [state.productionStages, state.settings.autoSave, state.initialized]);
 
   useEffect(() => {
-    if (state.settings.autoSave) {
+    if (state.initialized && state.settings.autoSave) {
+      console.log('💾 Auto-saving daily scores...');
       StorageUtils.save(STORAGE_KEYS.DAILY_SCORES, state.dailyScores);
     }
-  }, [state.dailyScores, state.settings.autoSave]);
+  }, [state.dailyScores, state.settings.autoSave, state.initialized]);
 
+  // FIXED: Production lines auto-save with initialization check
   useEffect(() => {
-    if (state.settings.autoSave) {
+    if (state.initialized && state.settings.autoSave) {
+      console.log('💾 Auto-saving production lines...', state.productionLines.length, 'lines');
       StorageUtils.save(STORAGE_KEYS.PRODUCTION_LINES, state.productionLines);
     }
-  }, [state.productionLines, state.settings.autoSave]);
+  }, [state.productionLines, state.settings.autoSave, state.initialized]);
 
   useEffect(() => {
-    StorageUtils.save(STORAGE_KEYS.SETTINGS, state.settings);
-  }, [state.settings]);
+    if (state.initialized) {
+      StorageUtils.save(STORAGE_KEYS.SETTINGS, state.settings);
+    }
+  }, [state.settings, state.initialized]);
 
   useEffect(() => {
-    StorageUtils.save(STORAGE_KEYS.PERFORMANCE_METRICS, state.performanceMetrics);
-  }, [state.performanceMetrics]);
+    if (state.initialized) {
+      StorageUtils.save(STORAGE_KEYS.PERFORMANCE_METRICS, state.performanceMetrics);
+    }
+  }, [state.performanceMetrics, state.initialized]);
 
   // Auto-recalculate analytics when daily scores change
   useEffect(() => {
@@ -773,7 +858,7 @@ export const DataProvider = ({ children }) => {
     }
   }, [state.dailyScores, state.settings.analytics?.enableRealTimeUpdates]);
 
-  // Enhanced action creators
+  // Enhanced action creators with better logging
   const actions = {
     // Orders
     addOrder: (order) => {
@@ -987,8 +1072,10 @@ export const DataProvider = ({ children }) => {
       });
     },
 
-    // Enhanced Production Lines
+    // FIXED: Enhanced Production Lines with better logging and immediate save
     addProductionLine: (line) => {
+      console.log('🏭 Adding production line:', line.name);
+      
       const newLine = {
         ...line,
         id: `line-${Date.now()}`,
@@ -999,11 +1086,24 @@ export const DataProvider = ({ children }) => {
         lastScoreUpdate: null,
         created_at: new Date().toISOString()
       };
+      
+      console.log('🏭 New line data:', newLine);
       dispatch({ type: ACTION_TYPES.ADD_PRODUCTION_LINE, payload: newLine });
+      
+      // Force immediate save to localStorage
+      if (state.settings.autoSave) {
+        const currentLines = state.productionLines;
+        const updatedLines = [newLine, ...currentLines];
+        console.log('💾 Force saving production lines:', updatedLines.length, 'lines');
+        StorageUtils.save(STORAGE_KEYS.PRODUCTION_LINES, updatedLines);
+      }
+      
       return newLine;
     },
 
     updateProductionLine: (id, updates) => {
+      console.log('🏭 Updating production line:', id);
+      
       const updatedLine = {
         ...updates,
         id,
@@ -1011,12 +1111,31 @@ export const DataProvider = ({ children }) => {
         operatorCount: parseInt(updates.operatorCount) || 0,
         updated_at: new Date().toISOString()
       };
+      
       dispatch({ type: ACTION_TYPES.UPDATE_PRODUCTION_LINE, payload: updatedLine });
+      
+      // Force immediate save to localStorage
+      if (state.settings.autoSave) {
+        const updatedLines = state.productionLines.map(line =>
+          line.id === id ? { ...line, ...updatedLine } : line
+        );
+        console.log('💾 Force saving updated production lines:', updatedLines.length, 'lines');
+        StorageUtils.save(STORAGE_KEYS.PRODUCTION_LINES, updatedLines);
+      }
+      
       return updatedLine;
     },
 
     deleteProductionLine: (id) => {
+      console.log('🗑️ Deleting production line:', id);
       dispatch({ type: ACTION_TYPES.DELETE_PRODUCTION_LINE, payload: id });
+      
+      // Force immediate save to localStorage
+      if (state.settings.autoSave) {
+        const remainingLines = state.productionLines.filter(line => line.id !== id);
+        console.log('💾 Force saving remaining production lines:', remainingLines.length, 'lines');
+        StorageUtils.save(STORAGE_KEYS.PRODUCTION_LINES, remainingLines);
+      }
     },
 
     updateLineEfficiency: (lineId, efficiency) => {
@@ -1094,7 +1213,7 @@ export const DataProvider = ({ children }) => {
       dispatch({ type: ACTION_TYPES.UPDATE_PERFORMANCE_METRICS, payload: initialState.performanceMetrics });
     },
 
-    // Enhanced analytics helper methods
+    // Enhanced analytics helper methods (keeping the same as before)
     getOrdersByStatus: (status) => {
       return state.orders.filter(order => order.status === status);
     },
@@ -1203,126 +1322,6 @@ export const DataProvider = ({ children }) => {
       };
     }
   };
-
-  // Include mock data generators (keeping existing ones)
-  const getMockOrders = () => [
-    {
-      id: 1,
-      order_number: 'ORD-2025-001',
-      style_number: 'STY-001',
-      cutsheet_number: 'CS-001',
-      account: 'Fashion Plus',
-      brand: 'Premium',
-      customer_id: 1,
-      customer_name: 'Fashion Plus Ltd',
-      delivery_date: '2025-09-15',
-      price_per_unit: 46.25,
-      total_units: 500,
-      total_value: 23125.00,
-      price: 23125.00,
-      colour: 'Navy Blue',
-      production_line: 'Line A',
-      status: 'in_production',
-      created_at: '2025-08-20T10:30:00.000Z',
-      updated_at: '2025-08-20T10:30:00.000Z',
-      customSizes: ['XS', 'S', 'M', 'L', 'XL', 'Custom-38', 'Custom-42'],
-      priority: 'High'
-    },
-    {
-      id: 2,
-      order_number: 'ORD-2025-002',
-      style_number: 'STY-002',
-      cutsheet_number: 'CS-002',
-      account: 'Style Central',
-      brand: 'Classic',
-      customer_id: 2,
-      customer_name: 'Style Central Inc',
-      delivery_date: '2025-09-20',
-      price_per_unit: 60.43,
-      total_units: 300,
-      total_value: 18130.00,
-      price: 18130.00,
-      colour: 'White',
-      production_line: 'Line B',
-      status: 'pending',
-      created_at: '2025-08-22T14:15:00.000Z',
-      updated_at: '2025-08-22T14:15:00.000Z',
-      customSizes: ['S', 'M', 'L', 'Custom-36', 'Custom-40'],
-      priority: 'Medium'
-    }
-  ];
-
-  const getMockCustomers = () => [
-    {
-      id: 1,
-      name: 'Fashion Plus Ltd',
-      contact_person: 'Sarah Johnson',
-      email: 'sarah@fashionplus.com',
-      phone: '+268 78901234',
-      address: 'Mbabane Industrial Area, Eswatini',
-      country: 'Eswatini',
-      category: 'Premium',
-      notes: 'Long-term client, prefers premium quality fabrics',
-      created_at: '2025-01-15T10:30:00.000Z',
-      total_orders: 15,
-      total_value: 346875.00,
-      last_order: '2025-08-20'
-    },
-    {
-      id: 2,
-      name: 'Style Central Inc',
-      contact_person: 'Michael Brown',
-      email: 'michael@stylecentral.com',
-      phone: '+268 76543210',
-      address: 'Manzini Commercial District, Eswatini',
-      country: 'Eswatini',
-      category: 'Regular',
-      notes: 'Volume orders, price-sensitive',
-      created_at: '2025-02-20T14:15:00.000Z',
-      total_orders: 8,
-      total_value: 181300.00,
-      last_order: '2025-08-22'
-    }
-  ];
-
-  const getMockInventory = () => [
-    {
-      id: 1,
-      type: 'fabric',
-      name: 'Cotton Denim',
-      supplier: 'Textile Suppliers Ltd',
-      quantity_received: 500,
-      quantity_used: 120,
-      quantity_available: 380,
-      unit: 'meters',
-      cost_per_unit: 231.25,
-      received_date: '2025-08-20',
-      low_stock_threshold: 50,
-      description: 'High-quality cotton denim, 14oz weight',
-      color: 'Indigo Blue',
-      category: 'Denim',
-      created_at: '2025-08-20',
-      last_updated: '2025-08-28',
-      total_value: 115625.00
-    }
-  ];
-
-  const getMockProductionStages = () => [
-    {
-      id: 1,
-      order_id: 1,
-      stage: 'cutting',
-      size: 'M',
-      units_completed: 150,
-      date_completed: '2025-08-28',
-      production_line: 'Line A',
-      operator: 'John Doe',
-      notes: 'Pattern cutting completed successfully',
-      quality_check: 'pass',
-      efficiency: 95.2,
-      created_at: '2025-08-28T10:30:00.000Z'
-    }
-  ];
 
   const value = {
     ...state,
